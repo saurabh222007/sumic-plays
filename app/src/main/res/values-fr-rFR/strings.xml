@@ -13,8 +13,8 @@
     <string name="playlists">Playlists</string>
     <!-- Top bar -->
     <plurals name="n_selected">
-        <item quantity="one">%d selected</item>
-        <item quantity="other">%d selected</item>
+        <item quantity="one">%d sélectionné</item>
+        <item quantity="other">%d sélectionnés</item>
     </plurals>
     <!-- Home -->
     <string name="history">Historique</string>
@@ -44,8 +44,8 @@
     <string name="most_played_albums">Most played albums</string>
     <!-- Search -->
     <string name="search">Search</string>
-    <string name="search_yt_music">Search YouTube Music…</string>
-    <string name="search_library">Search library…</string>
+    <string name="search_yt_music">Rechercher sur YouTube Music…</string>
+    <string name="search_library">Rechercher dans la bibliothèque…</string>
     <string name="filter_library">Bibliothèque</string>
     <string name="filter_liked">Liked</string>
     <string name="filter_downloaded">Downloaded</string>
@@ -69,32 +69,32 @@
     <!-- Artist screen -->
     <string name="from_your_library">From your library</string>
     <!-- Album screen -->
-    <string name="other_versions">Other versions</string>
+    <string name="other_versions">Autres versions</string>
     <!-- Playlist -->
     <string name="liked_songs">Liked songs</string>
     <string name="downloaded_songs">Downloaded songs</string>
-    <string name="playlist_is_empty">The playlist is empty</string>
+    <string name="playlist_is_empty">La playlist est vide</string>
     <string name="remove_download_playlist_confirm">Do you really want to remove all \"%s\" playlist songs from the Downloaded Songs storage?</string>
     <string name="delete_playlist_confirm">Do you really want to delete the playlist \"%s\"?</string>
-    <string name="change_playlist_cover">Change playlist cover</string>
+    <string name="change_playlist_cover">Changer la pochette de la playlist</string>
     <string name="remove_playlist_cover">Remove Cover</string>
     <!-- Button -->
-    <string name="retry">Retry</string>
+    <string name="retry">Réessayer</string>
     <string name="radio">Radio</string>
     <string name="shuffle">Shuffle</string>
-    <string name="reset">Reset</string>
+    <string name="reset">Réinitialiser</string>
     <!-- Menu -->
-    <string name="details">Details</string>
-    <string name="edit">Edit</string>
+    <string name="details">Détails</string>
+    <string name="edit">Modifier</string>
     <string name="start_radio">Start radio</string>
     <string name="play">Play</string>
     <string name="play_next">Play next</string>
-    <string name="add_to_queue">Add to queue</string>
-    <string name="add_to_library">Add to library</string>
-    <string name="add_all_to_library">Add all to library</string>
-    <string name="remove_from_library">Remove from library</string>
-    <string name="remove_all_from_library">Remove all from library</string>
-    <string name="action_download">Download</string>
+    <string name="add_to_queue">Ajouter à la file d\'attente</string>
+    <string name="add_to_library">Ajouter à la bibliothèque</string>
+    <string name="add_all_to_library">Ajouter tout à la bibliothèque</string>
+    <string name="remove_from_library">Supprimer de la bibliothèque</string>
+    <string name="remove_all_from_library">Supprimer tout de la bibliothèque</string>
+    <string name="action_download">Télécharger</string>
     <string name="downloading">Downloading</string>
     <string name="remove_download">Remove download</string>
     <string name="import_playlist">Import playlist</string>
@@ -121,11 +121,11 @@
     <string name="together_ban_confirm">Ban %1$s?</string>
     <string name="together_requesting_song_change">Requesting host to change the song\u2026</string>
     <string name="together_song_change_failed">Song change not applied. Please try again.</string>
-    <string name="remove_from_history">Remove from history</string>
-    <string name="remove_from_playlist">Remove from playlist</string>
-    <string name="remove_from_queue">Remove from queue</string>
-    <string name="search_online">Search online</string>
-    <string name="action_sync">Sync</string>
+    <string name="remove_from_history">Supprimer de l\'historique</string>
+    <string name="remove_from_playlist">Supprimer de la playlist</string>
+    <string name="remove_from_queue">Retirer de la file d\'attente</string>
+    <string name="search_online">Rechercher en ligne</string>
+    <string name="action_sync">Synchroniser</string>
     <string name="advanced">Avancé</string>
     <string name="tempo_and_pitch">Tempo and Pitch</string>
     <string name="tempo">Tempo</string>
@@ -142,18 +142,18 @@
     <string name="sort_by_play_time">Play time</string>
     <string name="sort_by_custom">Custom order</string>
     <!-- Dialog -->
-    <string name="media_id">Media id</string>
-    <string name="mime_type">MIME type</string>
+    <string name="media_id">Identifiant du média</string>
+    <string name="mime_type">Type MIME</string>
     <string name="codecs">Codecs</string>
-    <string name="bitrate">Bitrate</string>
+    <string name="bitrate">Débit binaire</string>
     <string name="sample_rate">Fréquence d\'échantillonnage</string>
     <string name="loudness">Loudness</string>
     <string name="volume">Volume</string>
     <string name="file_size">File size</string>
-    <string name="unknown">Unknown</string>
-    <string name="copied">Copied to clipboard</string>
-    <string name="edit_lyrics">Edit lyrics</string>
-    <string name="search_lyrics">Search lyrics</string>
+    <string name="unknown">Inconnu</string>
+    <string name="copied">Copié dans le presse-papiers</string>
+    <string name="edit_lyrics">Modifier les paroles</string>
+    <string name="search_lyrics">Rechercher les paroles</string>
     <string name="edit_song">Edit song</string>
     <string name="song_title">Song title</string>
     <string name="song_artists">Song artists</string>
@@ -161,8 +161,8 @@
     <string name="error_song_artist_empty">Song artist cannot be empty.</string>
     <string name="save">Save</string>
     <string name="choose_playlist">Choose playlist</string>
-    <string name="edit_playlist">Edit playlist</string>
-    <string name="create_playlist">Create playlist</string>
+    <string name="edit_playlist">Modifier la playlist</string>
+    <string name="create_playlist">Créer une playlist</string>
     <string name="playlist_name">Playlist name</string>
     <string name="error_playlist_name_empty">Playlist name cannot be empty.</string>
     <string name="edit_artist">Edit artist</string>
@@ -203,13 +203,13 @@
         <item quantity="other">%d ans</item>
     </plurals>
     <!-- Snackbar -->
-    <string name="added_to_playlist">Added to %s</string>
+    <string name="added_to_playlist">Ajouté à %s</string>
     <string name="added_n_songs_to_playlist">Added %1$d songs to %2$s</string>
-    <string name="added_to_n_playlists">Added to %d playlists</string>
+    <string name="added_to_n_playlists">Ajouté à %d playlists</string>
     <string name="added_n_songs_to_n_playlists">Added %1$d songs to %2$d playlists</string>
     <string name="playlist_imported">Playlist imported</string>
     <string name="removed_song_from_playlist">Removed \"%s\" from playlist</string>
-    <string name="playlist_synced">Playlist synced</string>
+    <string name="playlist_synced">Playlist synchronisée</string>
     <string name="undo">Undo</string>
     <!-- Player -->
     <string name="lyrics_not_found">Paroles introuvables</string>
@@ -219,10 +219,10 @@
         <item quantity="one">1 minute</item>
         <item quantity="other">%d minutes</item>
     </plurals>
-    <string name="error_no_stream">No stream available</string>
-    <string name="error_no_internet">No network connection</string>
+    <string name="error_no_stream">Aucun flux disponible</string>
+    <string name="error_no_internet">Aucune connexion réseau</string>
     <string name="error_timeout">Timeout</string>
-    <string name="error_unknown">Unknown error</string>
+    <string name="error_unknown">Erreur inconnue</string>
     <!-- Player action -->
     <string name="action_like">Like</string>
     <string name="action_like_all">Like all</string>
@@ -242,12 +242,12 @@
     <string name="music_player">Music Player</string>
     <!-- Settings -->
     <string name="settings">Settings</string>
-    <string name="appearance">Appearance</string>
-    <string name="theme">Theme</string>
+    <string name="appearance">Apparence</string>
+    <string name="theme">Thème</string>
     <string name="enable_dynamic_theme">Enable dynamic theme</string>
     <string name="random_theme_on_startup">Random theme on startup</string>
     <string name="random_theme_on_startup_desc">Apply a random color palette every time the app starts</string>
-    <string name="use_system_font">Use system font</string>
+    <string name="use_system_font">Utiliser la police système</string>
     <string name="use_system_font_desc">Use the device font instead of the app font</string>
     <!-- Color Palette -->
     <string name="color_palette">Color Palette</string>
@@ -257,7 +257,7 @@
     <string name="select_palette">Select a color palette</string>
     <string name="palette_applied">Palette applied</string>
     <!-- Palette Names -->
-    <string name="palette_default">Default</string>
+    <string name="palette_default">Par défaut</string>
     <!-- Blues -->
     <string name="palette_ocean_blue">Ocean Blue</string>
     <string name="palette_arctic_blue">Arctic</string>
@@ -268,24 +268,24 @@
     <!-- Greens -->
     <string name="palette_emerald_green">Emerald</string>
     <string name="palette_teal_wave">Teal Wave</string>
-    <string name="palette_forest_green">Forest</string>
+    <string name="palette_forest_green">Forêt</string>
     <string name="palette_spotify_green">Spotify</string>
-    <string name="palette_mint_fresh">Mint</string>
+    <string name="palette_mint_fresh">Menthe</string>
     <string name="palette_olive_garden">Olive</string>
-    <string name="palette_sage_green">Sage</string>
+    <string name="palette_sage_green">Sauge</string>
     <!-- Oranges & Yellows -->
     <string name="palette_sunset_orange">Sunset</string>
     <string name="palette_golden_hour">Golden</string>
-    <string name="palette_warm_amber">Amber</string>
-    <string name="palette_tangerine_blast">Tangerine</string>
+    <string name="palette_warm_amber">Ambre</string>
+    <string name="palette_tangerine_blast">Mandarine</string>
     <string name="palette_peach">Peach</string>
     <string name="palette_mango">Mango</string>
     <!-- Purples -->
     <string name="palette_royal_purple">Royal Purple</string>
-    <string name="palette_lavender_dream">Lavender</string>
+    <string name="palette_lavender_dream">Lavande</string>
     <string name="palette_grape_purple">Grape</string>
     <string name="palette_violet">Violet</string>
-    <string name="palette_amethyst">Amethyst</string>
+    <string name="palette_amethyst">Améthyste</string>
     <string name="palette_ultra_violet">Ultra Violet</string>
     <!-- Pinks -->
     <string name="palette_cherry_blossom">Sakura</string>
@@ -294,17 +294,17 @@
     <string name="palette_hot_pink">Hot Pink</string>
     <string name="palette_blush">Blush</string>
     <string name="palette_coral">Coral</string>
-    <string name="palette_bubblegum">Bubblegum</string>
+    <string name="palette_bubblegum">Chewing-gum</string>
     <!-- Reds -->
     <string name="palette_crimson_red">Crimson</string>
     <string name="palette_youtube_red">YouTube</string>
-    <string name="palette_wine_red">Wine</string>
+    <string name="palette_wine_red">Vin</string>
     <string name="palette_ruby_red">Ruby</string>
     <string name="palette_scarlet">Scarlet</string>
     <!-- Neutrals -->
-    <string name="palette_charcoal">Charcoal</string>
-    <string name="palette_silver">Silver</string>
-    <string name="palette_slate">Slate</string>
+    <string name="palette_charcoal">Charbon</string>
+    <string name="palette_silver">Argent</string>
+    <string name="palette_slate">Ardoise</string>
     <string name="palette_graphite">Graphite</string>
     <!-- Earth Tones -->
     <string name="palette_terracotta">Terracotta</string>
@@ -328,44 +328,44 @@
     <!-- Special & Themed -->
     <string name="palette_ocean">Ocean</string>
     <string name="palette_forest">Deep Forest</string>
-    <string name="palette_autumn">Autumn</string>
-    <string name="palette_winter">Winter</string>
-    <string name="palette_spring">Spring</string>
-    <string name="palette_summer">Summer</string>
+    <string name="palette_autumn">Automne</string>
+    <string name="palette_winter">Hiver</string>
+    <string name="palette_spring">Printemps</string>
+    <string name="palette_summer">Été</string>
     <string name="palette_twilight">Twilight</string>
     <string name="palette_aurora">Aurora</string>
-    <string name="palette_candy">Candy</string>
-    <string name="palette_rainbow">Rainbow</string>
+    <string name="palette_candy">Bonbon</string>
+    <string name="palette_rainbow">Arc-en-ciel</string>
     <!-- Additional Palettes -->
     <string name="palette_aquamarine">Aquamarine</string>
     <string name="palette_coral_reef">Coral Reef</string>
     <string name="palette_cotton_candy">Cotton Candy</string>
     <string name="palette_deep_sea">Deep Sea</string>
     <string name="palette_electric_violet">Electric Violet</string>
-    <string name="palette_mustard">Mustard</string>
+    <string name="palette_mustard">Moutarde</string>
     <string name="palette_olive">Olive</string>
     <string name="palette_peachy_keen">Peachy Keen</string>
     <string name="palette_plum">Plum</string>
-    <string name="palette_slate_gray">Slate Gray</string>
+    <string name="palette_slate_gray">Gris ardoise</string>
     <string name="palette_sunset_beach">Sunset Beach</string>
     <string name="palette_turquoise">Turquoise</string>
     <!-- End of Color Palette -->
-    <string name="dark_theme">Dark theme</string>
-    <string name="dark_theme_on">On</string>
-    <string name="dark_theme_off">Off</string>
+    <string name="dark_theme">Thème sombre</string>
+    <string name="dark_theme_on">Activé</string>
+    <string name="dark_theme_off">Désactivé</string>
     <string name="show_button">Show button</string>
     <string name="corner_radius">Corner radius: %1$d</string>
     <string name="adjust_radius">Adjust corner radius</string>
-    <string name="cancel_button">Cancel</string>
+    <string name="cancel_button">Annuler</string>
     <string name="ok_button">OK</string>
     <string name="custom_radius">Customize thumbnail corner radius</string>
     <string name="custom">Custom</string>
-    <string name="customized_background">Customized background</string>
-    <string name="customize_background_title">Customize background</string>
+    <string name="customized_background">Arrière-plan personnalisé</string>
+    <string name="customize_background_title">Personnaliser l\'arrière-plan</string>
     <string name="add_image">Add image</string>
-    <string name="blur">Blur</string>
-    <string name="contrast">Contrast</string>
-    <string name="brightness">Brightness</string>
+    <string name="blur">Flou</string>
+    <string name="contrast">Contraste</string>
+    <string name="brightness">Luminosité</string>
     <string name="custom_value">Custom value</string>
     <string name="new_library_design">New library design</string>
     <string name="new_library_design_description">Enable the new library design (may be unstable)</string>
@@ -374,22 +374,22 @@
     <string name="show_button1_description">Toggle visibility of button 1 in Discord Rich Presence</string>
     <string name="show_button2_description">Toggle visibility of button 2 in Discord Rich Presence</string>
     <string name="discord_activity_type">Activity type</string>
-    <string name="dark_theme_follow_system">Follow system</string>
-    <string name="pure_black">Pure black</string>
+    <string name="dark_theme_follow_system">Suivre le système</string>
+    <string name="pure_black">Noir pur</string>
     <string name="disable_blur">Disable blur effects</string>
     <string name="disable_blur_desc">Disable blur effects throughout the app</string>
     <string name="customize_navigation_tabs">Customize navigation tabs</string>
-    <string name="player">Player</string>
-    <string name="player_text_alignment">Player text alignment</string>
+    <string name="player">Lecteur</string>
+    <string name="player_text_alignment">Alignement du texte du lecteur</string>
     <string name="lyrics_text_position">Lyrics text position</string>
     <string name="sided">Sided</string>
-    <string name="left">Left</string>
-    <string name="center">Center</string>
-    <string name="right">Right</string>
-    <string name="player_slider_style">Player slider style</string>
+    <string name="left">Gauche</string>
+    <string name="center">Centre</string>
+    <string name="right">Droite</string>
+    <string name="player_slider_style">Style du curseur du lecteur</string>
     <string name="slider_style_standard">Standard</string>
     <string name="slider_style_wavy">Wavy</string>
-    <string name="slider_style_thick">Thick</string>
+    <string name="slider_style_thick">Épais</string>
     <string name="slider_style_circular">Circular</string>
     <string name="slider_style_simple">Simple</string>
     <string name="default_">Default</string>
@@ -405,17 +405,17 @@
     <string name="none">None</string>
     <string name="fade">Fade</string>
     <string name="slide">Slide</string>
-    <string name="karaoke">Karaoke</string>
+    <string name="karaoke">Karaoké</string>
     <string name="apple_music_style">Apple Music</string>
     <!-- Lyrics line spacing -->
     <string name="lyrics_line_spacing">Lyrics line spacing</string>
-    <string name="content">Content</string>
+    <string name="content">Contenu</string>
     <string name="action_logout">Log out</string>
     <string name="action_login">Log in</string>
     <string name="login">Login</string>
     <string name="not_logged_in">Not logged in</string>
     <string name="login_failed">Login failed</string>
-    <string name="content_language">Default content language</string>
+    <string name="content_language">Langue du contenu par défaut</string>
     <string name="content_country">Default content country</string>
     <string name="system_default">System default</string>
     <string name="enable_proxy">Enable proxy</string>
@@ -426,11 +426,11 @@
     <string name="restart_to_take_effect">Restart to take effect</string>
     <string name="enable_betterlyrics">Enable BetterLyrics</string>
     <string name="enable_simpmusic_lyrics">Enable SimpMusic lyrics</string>
-    <string name="player_and_audio">Player and audio</string>
+    <string name="player_and_audio">Lecteur et Audio</string>
     <string name="audio_quality">Audio quality</string>
     <string name="audio_quality_auto">Auto</string>
-    <string name="audio_quality_high">High</string>
-    <string name="audio_quality_low">Low</string>
+    <string name="audio_quality_high">Haute</string>
+    <string name="audio_quality_low">Basse</string>
     <string name="network_metered_title">Treat network as metered</string>
     <string name="network_metered_description">When enabled, the app will prefer lower-quality streams on metered networks</string>
     <string name="queue">Queue</string>
@@ -444,8 +444,8 @@
     <string name="audio_normalization">Audio normalization</string>
     <string name="audio_offload">Audio offload</string>
     <string name="audio_offload_desc">Let supported devices play audio using low-power hardware decoding. Some audio processing features are disabled.</string>
-    <string name="pause_on_device_mute">Pause when device volume is 0</string>
-    <string name="pause_on_device_mute_desc">Automatically pause music when muted and resume when unmuted</string>
+    <string name="pause_on_device_mute">Mettre en pause lorsque le volume de l\'appareil est à 0</string>
+    <string name="pause_on_device_mute_desc">Mettre automatiquement la musique en pause lorsque le son est coupé et la reprendre lorsque le son est rétabli</string>
     <string name="auto_skip_next_on_error">Auto skip to next song when error occurs</string>
     <string name="auto_skip_next_on_error_desc">Ensure your continuous playback experience</string>
     <string name="stop_music_on_task_clear">Stop music on task clear</string>
@@ -480,7 +480,7 @@
     <string name="eq_output_gain">Output gain</string>
     <string name="eq_bass_boost">Bass boost</string>
     <string name="eq_virtualizer">Virtualizer</string>
-    <string name="storage">Storage</string>
+    <string name="storage">Stockage</string>
     <string name="smart_trimmer">Smart Trimmer</string>
     <string name="smart_trimmer_description">Smart trimmer dynamically manages the image cache and song cache, pruning old entries to save disk space.</string>
     <string name="cache">Cache</string>
@@ -494,7 +494,7 @@
     <string name="max_song_cache_size">Max song cache size</string>
     <string name="clear_song_cache">Clear song cache</string>
     <string name="size_used">%s used</string>
-    <string name="privacy">Privacy</string>
+    <string name="privacy">Confidentialité</string>
     <string name="listen_history">Listen history</string>
     <string name="pause_listen_history">Pause listen history</string>
     <string name="clear_listen_history">Clear listen history</string>
@@ -511,7 +511,7 @@
     <string name="enable_kugou">Enable KuGou lyrics provider</string>
     <string name="preload_queue_lyrics">Preload queue lyrics</string>
     <string name="queue_lyrics_preload_count">Number of songs to preload</string>
-    <string name="hide_explicit">Hide explicit content</string>
+    <string name="hide_explicit">Masquer le contenu explicite</string>
     <string name="hide_video">Hide music videos</string>
     <string name="backup_restore">Backup and restore</string>
     <string name="action_backup">Backup</string>
@@ -654,7 +654,7 @@ Velune will only extract your token, and everything else is stored locally.</str
     <string name="playback_state_ended">ENDED</string>
     <string name="playback_state_unknown">UNKNOWN</string>
     <string name="share_logs">Share logs</string>
-    <string name="about">About</string>
+    <string name="about">À propos</string>
     <string name="app_version">App version</string>
     <string name="new_version_available">New version available</string>
     <string name="translation_models">Translation Models</string>
@@ -681,8 +681,8 @@ Velune will only extract your token, and everything else is stored locally.</str
     <string name="download">Download</string>
     <string name="permissions_title">Allow Velune to work best</string>
     <string name="permissions_subtitle">We use a few permissions to play and manage your music reliably. You can change these anytime in system settings.</string>
-    <string name="permission_storage_title">Storage access</string>
-    <string name="permission_storage_desc">Required to read your downloaded and local audio files for playback.</string>
+    <string name="permission_storage_title">Accès au stockage</string>
+    <string name="permission_storage_desc">Nécessaire pour lire vos fichiers audio téléchargés et stockés localement.</string>
     <string name="permission_notifications_title">Notifications</string>
     <string name="permission_notifications_desc">Used to show playback controls and keep music running in the background.</string>
     <string name="permission_status_allowed">Allowed</string>
