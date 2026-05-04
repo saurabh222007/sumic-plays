@@ -35,7 +35,7 @@
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-MVVM-52525B?style=for-the-badge)
 
-
+</div>
 ## 📥 Download Now
 
 
@@ -89,18 +89,6 @@ Velune is not just another music player — it's a **complete reimagination of Y
 * 🎨 Stunning **Material You** interface
 
 > 💡 This is YouTube Music — *but unlocked*
-
-## 🚀 Why Velune?
-
-Velune is not just another music player — it’s a **complete reimagination of YouTube Music**.
-
-- ⚡ Faster than the official app  
-- 🎵 Built for audiophiles & power users  
-- 📦 True offline-first experience  
-- 🎨 Stunning Material You interface  
-
-> 💡 This is YouTube Music — **but unlocked**
-
 ---
 
 ## 🎯 Highlight Feature
