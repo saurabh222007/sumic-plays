@@ -3,6 +3,7 @@
 
  <img src="https://raw.githubusercontent.com/nikhilvishwakarma00/Velune/main/fastlane/metadata/android/en-US/images/icon.png" width="110" />
 
+</div>
 # 🌌 Velune
 <div align="center">
 
@@ -106,7 +107,8 @@ Experience lyrics like never before:
 
 ## 📸 Preview
 
-
+<div align="center">
+ 
 <img src="screenshots/Home.png" width="140"/>
 <img src="screenshots/Now Playing.png" width="140"/>
 <img src="screenshots/History.png" width="140"/>
@@ -116,7 +118,7 @@ Experience lyrics like never before:
 <img src="screenshots/Settings.png" width="140"/>
 <img src="screenshots/About.png" width="140"/>
 
-
+</div>
 
 
 ---
