@@ -29,8 +29,8 @@
     <string name="similar_to">Similaire à</string>
     <string name="new_release_albums">Nouveautés</string>
     <string name="select_playlist_to_sync">Select Playlist To Sync</string>
-    <string name="integration">Integration</string>
-    <string name="integrations">Integrations</string>
+    <string name="integration">Intégration</string>
+    <string name="integrations">Intégrations</string>
     <string name="internal_subcategory_settings">Internal &amp; subcategory settings</string>
     <string name="search_try_different">Try a different search term</string>
     <!-- History -->
@@ -67,7 +67,7 @@
     <string name="library_album_empty">Les albums de la bibliothèque s\'afficheront ici</string>
     <string name="library_playlist_empty">Your playlists will show up here</string>
     <!-- Artist screen -->
-    <string name="from_your_library">From your library</string>
+    <string name="from_your_library">Depuis votre bibliothèque</string>
     <!-- Album screen -->
     <string name="other_versions">Autres versions</string>
     <!-- Playlist -->
@@ -103,17 +103,17 @@
     <string name="add_to_playlist">Ajouter à la playlist</string>
     <string name="view_artist">Voir l\'artiste</string>
     <string name="view_album">Voir l\'album</string>
-    <string name="view_all">View all</string>
-    <string name="more">more</string>
+    <string name="view_all">Tout afficher</string>
+    <string name="more">plus</string>
     <string name="refetch">Récupérer</string>
     <string name="share">Partager</string>
     <string name="delete">Supprimer</string>
     <string name="together_participants">Participants</string>
-    <string name="together_connected_count">%1$d connected</string>
-    <string name="together_role_host">Host</string>
-    <string name="together_role_guest">Guest</string>
-    <string name="together_pending_approval">Pending approval</string>
-    <string name="together_waiting_approval">Waiting Approval</string>
+    <string name="together_connected_count">%1$d connectés</string>
+    <string name="together_role_host">Hôte</string>
+    <string name="together_role_guest">Invité</string>
+    <string name="together_pending_approval">En attente d\'approbation</string>
+    <string name="together_waiting_approval">En attente d\'approbation</string>
     <string name="together_host_left_session">Host Leaved Sessions</string>
     <string name="together_kick">Kick</string>
     <string name="together_ban">Ban</string>
@@ -137,7 +137,7 @@
     <string name="sort_by_name">Nom</string>
     <string name="sort_by_artist">Artiste</string>
     <string name="sort_by_year">Année</string>
-    <string name="sort_by_song_count">Song count</string>
+    <string name="sort_by_song_count">Nombre de titres</string>
     <string name="sort_by_length">Durée</string>
     <string name="sort_by_play_time">Play time</string>
     <string name="sort_by_custom">Custom order</string>
@@ -149,7 +149,7 @@
     <string name="sample_rate">Fréquence d\'échantillonnage</string>
     <string name="loudness">Loudness</string>
     <string name="volume">Volume</string>
-    <string name="file_size">File size</string>
+    <string name="file_size">Taille du fichier</string>
     <string name="unknown">Inconnu</string>
     <string name="copied">Copié dans le presse-papiers</string>
     <string name="edit_lyrics">Modifier les paroles</string>
@@ -210,7 +210,7 @@
     <string name="playlist_imported">Playlist importée</string>
     <string name="removed_song_from_playlist">Removed %1$s from playlist</string>
     <string name="playlist_synced">Playlist synchronisée</string>
-    <string name="undo">Undo</string>
+    <string name="undo">Annuler</string>
     <!-- Player -->
     <string name="lyrics_not_found">Paroles introuvables</string>
     <string name="sleep_timer">Sleep timer</string>
@@ -224,34 +224,34 @@
     <string name="error_timeout">Timeout</string>
     <string name="error_unknown">Erreur inconnue</string>
     <!-- Player action -->
-    <string name="action_like">Like</string>
-    <string name="action_like_all">Like all</string>
-    <string name="action_remove_like">Remove like</string>
-    <string name="action_remove_like_all">Remove all likes</string>
+    <string name="action_like">J\'aime</string>
+    <string name="action_like_all">J\'aime tout</string>
+    <string name="action_remove_like">Supprimer le « J\'aime »</string>
+    <string name="action_remove_like_all">Supprimer tous les « J\'aime »</string>
     <string name="action_shuffle_on">Shuffle on</string>
     <string name="action_shuffle_off">Shuffle off</string>
-    <string name="repeat_mode_off">Repeat mode off</string>
-    <string name="repeat_mode_one">Repeat current song</string>
-    <string name="repeat_mode_all">Repeat queue</string>
+    <string name="repeat_mode_off">Mode répétition désactivé</string>
+    <string name="repeat_mode_one">Répéter le titre en cours</string>
+    <string name="repeat_mode_all">Répéter la file d\'attente</string>
     <!-- Queue Title -->
     <string name="queue_all_songs">Tous les titres</string>
-    <string name="queue_searched_songs">Searched songs</string>
-    <string name="queue_continue_playing">Continue Playing</string>
-    <string name="queue_autoplaying_similar">Autoplaying similar music</string>
+    <string name="queue_searched_songs">Titres recherchés</string>
+    <string name="queue_continue_playing">Continuer à lire</string>
+    <string name="queue_autoplaying_similar">Lecture automatique de morceaux similaires</string>
     <!-- Notification name -->
-    <string name="music_player">Music Player</string>
+    <string name="music_player">Lecteur de Musique</string>
     <!-- Settings -->
     <string name="settings">Paramètres</string>
     <string name="appearance">Apparence</string>
     <string name="theme">Thème</string>
     <string name="enable_dynamic_theme">Activer le thème dynamique</string>
-    <string name="random_theme_on_startup">Random theme on startup</string>
-    <string name="random_theme_on_startup_desc">Apply a random color palette every time the app starts</string>
+    <string name="random_theme_on_startup">Thème aléatoire au démarrage</string>
+    <string name="random_theme_on_startup_desc">Appliquer une palette de couleurs aléatoire à chaque démarrage de l\'application</string>
     <string name="use_system_font">Utiliser la police système</string>
-    <string name="use_system_font_desc">Use the device font instead of the app font</string>
+    <string name="use_system_font_desc">Utiliser la police de l\'appareil plutôt que celle de l\'application</string>
     <!-- Color Palette -->
-    <string name="color_palette">Color Palette</string>
-    <string name="customize_theme_colors">Choose your app theme colors</string>
+    <string name="color_palette">Palette de couleurs</string>
+    <string name="customize_theme_colors">Choisissez les couleurs du thème de votre application</string>
     <string name="selected_theme_color">Selected Theme Color</string>
     <string name="theme_preview">Theme Preview</string>
     <string name="select_palette">Select a color palette</string>
@@ -355,10 +355,10 @@
     <string name="dark_theme_off">Désactivé</string>
     <string name="show_button">Show button</string>
     <string name="corner_radius">Corner radius: %1$d</string>
-    <string name="adjust_radius">Adjust corner radius</string>
+    <string name="adjust_radius">Ajuster le rayon des angles</string>
     <string name="cancel_button">Annuler</string>
     <string name="ok_button">OK</string>
-    <string name="custom_radius">Customize thumbnail corner radius</string>
+    <string name="custom_radius">Personnaliser le rayon des coins des vignettes</string>
     <string name="custom">Custom</string>
     <string name="customized_background">Arrière-plan personnalisé</string>
     <string name="customize_background_title">Personnaliser l\'arrière-plan</string>
@@ -422,7 +422,7 @@
     <string name="proxy_type">Type de proxy</string>
     <string name="proxy_url">URL du proxy</string>
     <string name="stream_bypass_proxy">Bypass proxy for streams</string>
-    <string name="stream_bypass_proxy_desc">Use your direct IP for stream playback to avoid IP mismatch</string>
+    <string name="stream_bypass_proxy_desc">Utilisez votre adresse IP directe pour la lecture en streaming afin d\'éviter toute incompatibilité d\'adresse IP</string>
     <string name="restart_to_take_effect">Restart to take effect</string>
     <string name="enable_betterlyrics">Enable BetterLyrics</string>
     <string name="enable_simpmusic_lyrics">Enable SimpMusic lyrics</string>
@@ -504,7 +504,7 @@
     <string name="clear_search_history">Clear search history</string>
     <string name="clear_search_history_confirm">Are you sure you want to clear all search history?</string>
     <string name="use_login_for_browse">Use login for browsing content</string>
-    <string name="use_login_for_browse_desc">This can influence what content you see and for example shows premium-only albums if you are logged in with a Premium account</string>
+    <string name="use_login_for_browse_desc">Cela peut influencer le contenu qui s\'affiche et, par exemple, faire apparaître des albums réservés aux abonnés Premium si vous êtes connecté avec un compte Premium</string>
     <string name="disable_screenshot">Disable screenshot</string>
     <string name="disable_screenshot_desc">When this option is on, screenshots and the app\'s view in Recents are disabled.</string>
     <string name="enable_lrclib">Enable LrcLib lyrics provider</string>
@@ -522,8 +522,8 @@
     <string name="restore_success">Backup restored successfully</string>
     <string name="restore_failed">Failed to restore backup</string>
     <string name="discord_integration">Discord Integration</string>
-    <string name="discord_information">Velune uses the KizzyRPC library to set your Discord account\'s status. This involves using the Discord Gateway connection, which may be considered a violation of Discord\'s TOS. However, there are no known cases of user accounts being suspended for this reason. Use at your own risk.
-Velune will only extract your token, and everything else is stored locally.</string>
+    <string name="discord_information">Velune utilise la bibliothèque KizzyRPC pour modifier le statut de votre compte Discord. Cela implique l\'utilisation de la connexion via la passerelle Discord, ce qui peut être considéré comme une violation des conditions d\'utilisation de Discord. Cependant, aucun cas de suspension de compte pour cette raison n\'a été signalé à ce jour. Utilisez cette fonctionnalité à vos propres risques.
+Velune se contente d\'extraire votre jeton ; toutes les autres données sont stockées localement.</string>
     <string name="options">Options</string>
     <string name="preview">Preview</string>
     <string name="enable_discord_rpc">Enable Rich Presence</string>
