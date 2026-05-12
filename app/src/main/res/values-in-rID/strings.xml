@@ -200,7 +200,7 @@
     <string name="added_to_n_playlists">Ditambahkan ke %d playlist</string>
     <string name="added_n_songs_to_n_playlists">Telah ditambahkan %1$d lagu ke %2$d playlist</string>
     <string name="playlist_imported">Daftar putar diimpor</string>
-    <string name="removed_song_from_playlist">\"%s\" dihapus dari playlist</string>
+    <string name="removed_song_from_playlist">Removed %1$s from playlist</string>
     <string name="playlist_synced">Daftar Putar disinkronkan</string>
     <string name="undo">Batalkan</string>
     <!-- Player -->

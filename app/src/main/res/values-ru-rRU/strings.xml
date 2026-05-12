@@ -224,7 +224,7 @@
     <string name="added_to_n_playlists">Added to %d playlists</string>
     <string name="added_n_songs_to_n_playlists">Added %1$d songs to %2$d playlists</string>
     <string name="playlist_imported">Playlist imported</string>
-    <string name="removed_song_from_playlist">Removed \"%s\" from playlist</string>
+    <string name="removed_song_from_playlist">Removed %1$s from playlist</string>
     <string name="playlist_synced">Playlist synced</string>
     <string name="undo">Undo</string>
     <!-- Player -->

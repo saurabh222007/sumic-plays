@@ -208,7 +208,7 @@
     <string name="added_to_n_playlists">Zu %d playlist hinzugefügt</string>
     <string name="added_n_songs_to_n_playlists">%1$d Lieder zu %2$d Playlists hinzugefügt</string>
     <string name="playlist_imported">Playlist importiert</string>
-    <string name="removed_song_from_playlist">\"%s\" aus der Playlist entfernt</string>
+    <string name="removed_song_from_playlist">Removed %1$s from playlist</string>
     <string name="playlist_synced">Playlist synchronisiert</string>
     <string name="undo">Rückgängig machen</string>
     <!-- Player -->
