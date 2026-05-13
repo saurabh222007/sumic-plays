@@ -13,10 +13,12 @@ import android.media.MediaCodecList
 import android.net.ConnectivityManager
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
+import androidx.media3.common.C
 import androidx.media3.database.DatabaseProvider
 import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadManager
@@ -101,15 +103,22 @@ constructor(
         ResolvingDataSource.Factory(
             CacheDataSource
                 .Factory()
-                .setCache(playerCache)
+                .setCache(downloadCache)
                 .setUpstreamDataSourceFactory(
-                    OkHttpDataSource.Factory(
-                        mediaOkHttpClient,
-                    ),
-                ),
+                    CacheDataSource
+                        .Factory()
+                        .setCache(playerCache)
+                        .setUpstreamDataSourceFactory(
+                            OkHttpDataSource.Factory(
+                                mediaOkHttpClient,
+                            ),
+                        )
+                        .setCacheWriteDataSinkFactory(null)
+                        .setFlags(FLAG_IGNORE_CACHE_ON_ERROR),
+                )
+                .setFlags(FLAG_IGNORE_CACHE_ON_ERROR),
         ) { dataSpec ->
             val mediaId = dataSpec.key ?: error("No media id")
-            val length = if (dataSpec.length >= 0) dataSpec.length else 1
             if (playerCache.cacheSpace > 500 * 1024 * 1024L) {
                 kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
                     playerCache.keys.shuffled().take(10).forEach { key ->
@@ -117,7 +126,13 @@ constructor(
                     }
                 }
             }
-            if (playerCache.isCached(mediaId, dataSpec.position, length)) {
+            if (
+                dataSpec.length >= 0 &&
+                (
+                    downloadCache.isCached(mediaId, dataSpec.position, dataSpec.length) ||
+                        playerCache.isCached(mediaId, dataSpec.position, dataSpec.length)
+                    )
+            ) {
                 return@Factory dataSpec
             }
             songUrlCache[mediaId]?.takeIf { it.second > System.currentTimeMillis() }?.let {
@@ -145,7 +160,7 @@ constructor(
                         codecs = format.mimeType.split("codecs=")[1].removeSurrounding("\""),
                         bitrate = format.bitrate,
                         sampleRate = format.audioSampleRate,
-                        contentLength = format.contentLength!!,
+                        contentLength = format.contentLength ?: C.LENGTH_UNSET.toLong(),
                         loudnessDb = playbackData.audioConfig?.loudnessDb,
                         perceptualLoudnessDb = playbackData.audioConfig?.perceptualLoudnessDb,
                         playbackUrl = playbackData.playbackTracking?.videostatsPlaybackUrl?.baseUrl
