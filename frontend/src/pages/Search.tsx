@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { API_URL } from '../config';
 import { Search as SearchIcon, Sparkles, Music2, Mic2, X, Music } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayerStore, type Track } from '../store/usePlayerStore';
@@ -29,7 +30,7 @@ export function Search() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchTracks = useCallback(async (q: string, signal?: AbortSignal): Promise<Track[]> => {
-    const res = await fetch(`http://localhost:5000/api/music/search?q=${encodeURIComponent(q)}`, { signal });
+    const res = await fetch(`${API_URL}/api/music/search?q=${encodeURIComponent(q)}`, { signal });
     if (!res.ok) throw new Error(`Search failed: ${res.status}`);
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -116,7 +117,7 @@ export function Search() {
       setSearchSections(null);
       setResults([]);
       try {
-        const res = await fetch(`http://localhost:5000/api/music/search?q=${encodeURIComponent(query + ' lyrics')}`);
+        const res = await fetch(`${API_URL}/api/music/search?q=${encodeURIComponent(query + ' lyrics')}`);
         if (res.ok) setResults(await res.json());
       } catch (e) {
         console.error(e);
@@ -140,7 +141,7 @@ export function Search() {
         // Search for tracks based on interpreted queries
         const allTracks: Track[] = [];
         for (const sq of feeling.searchQueries.slice(0, 3)) {
-          const res = await fetch(`http://localhost:5000/api/music/search?q=${encodeURIComponent(sq)}`);
+          const res = await fetch(`${API_URL}/api/music/search?q=${encodeURIComponent(sq)}`);
           if (res.ok) {
             const data = await res.json();
             allTracks.push(...data.slice(0, 3));

@@ -10,7 +10,14 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// Allow the frontend origin (set FRONTEND_URL in production)
+const FRONTEND_URL = process.env.FRONTEND_URL;
+app.use(cors({
+  origin: FRONTEND_URL
+    ? [FRONTEND_URL, 'http://localhost:5173', 'http://localhost:3000']
+    : true, // allow all origins in development
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use('/api/music', musicRoutes);

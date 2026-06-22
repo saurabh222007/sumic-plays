@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_URL } from '../config';
 import { motion } from 'framer-motion';
 import { TrendingUp, Clock, Zap, Sparkles, Music, Mic2, Globe, Guitar, Loader2 } from 'lucide-react';
 import { usePlayerStore, type Track } from '../store/usePlayerStore';
@@ -34,7 +35,7 @@ export function Home() {
   useEffect(() => {
     setLoading(true);
     setError('');
-    fetch('http://localhost:5000/api/music/trending', { signal: AbortSignal.timeout(10000) })
+    fetch(`${API_URL}/api/music/trending`, { signal: AbortSignal.timeout(10000) })
       .then(res => {
         if (!res.ok) throw new Error('Search failed');
         return res.json();
@@ -61,7 +62,7 @@ export function Home() {
     if (!seedTrack) return;
 
     setLoadingRecs(true);
-    const url = `http://localhost:5000/api/music/recommendations?artist=${encodeURIComponent(seedTrack.artist)}&title=${encodeURIComponent(seedTrack.title)}&trackId=${seedTrack.id}`;
+    const url = `${API_URL}/api/music/recommendations?artist=${encodeURIComponent(seedTrack.artist)}&title=${encodeURIComponent(seedTrack.title)}&trackId=${seedTrack.id}`;
     
     fetch(url, { signal: AbortSignal.timeout(12000) })
       .then(res => {
@@ -221,7 +222,7 @@ export function Home() {
                   if (loadingDiscovery) return;
                   setLoadingDiscovery(item.label);
                   try {
-                    const res = await fetch(`http://localhost:5000/api/music/search?q=${encodeURIComponent(item.query)}`, { signal: AbortSignal.timeout(10000) });
+                    const res = await fetch(`${API_URL}/api/music/search?q=${encodeURIComponent(item.query)}`, { signal: AbortSignal.timeout(10000) });
                     const data = await res.json();
                     const tracks = Array.isArray(data) ? data.slice(0, 10) : [];
                     if (tracks.length > 0) {

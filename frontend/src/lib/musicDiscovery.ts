@@ -1,4 +1,5 @@
 import type { Track } from '../store/usePlayerStore';
+import { API_URL } from '../config';
 
 export type TrackVersion = 'official' | 'topic' | 'lyrics' | 'alternative' | 'modified' | 'unknown';
 
@@ -323,7 +324,7 @@ export async function fetchRecommendations(track: Track, recentTracks: Track[] =
   if (track.duration) params.set('duration', String(track.duration));
   if (track.url) params.set('url', track.url);
 
-  const res = await fetch(`http://localhost:5000/api/music/recommendations?${params.toString()}`, { signal: AbortSignal.timeout(12000) });
+  const res = await fetch(`${API_URL}/api/music/recommendations?${params.toString()}`, { signal: AbortSignal.timeout(12000) });
   if (!res.ok) return [];
   const data = await res.json();
   return Array.isArray(data) ? data.map((item: Track) => ({ ...item, title: getTrackTitle(item) })) : [];

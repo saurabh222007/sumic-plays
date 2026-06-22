@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_URL } from '../config';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Play, ArrowLeft, Sparkles } from 'lucide-react';
@@ -34,7 +35,7 @@ export function MoodPlaylist() {
     setLoading(true);
     // Fetch tracks using the first search query of the mood
     const query = moodConfig.searchQueries[0];
-    fetch(`http://localhost:5000/api/music/search?q=${encodeURIComponent(query)}`)
+    fetch(`${API_URL}/api/music/search?q=${encodeURIComponent(query)}`)
       .then((res) => {
         if (!res.ok) throw new Error('Search failed');
         return res.json();

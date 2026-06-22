@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { API_URL } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Loader2, CheckCircle2, AlertTriangle, ExternalLink, Music2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLibraryStore } from '../store/useLibraryStore';
@@ -50,7 +51,7 @@ export function ImportPlaylistModal({ isOpen, onClose, onPlaylistCreated }: Impo
     try {
       setProgress('Fetching playlist tracks...');
 
-      const response = await fetch('http://localhost:5000/api/music/import-playlist', {
+      const response = await fetch(`${API_URL}/api/music/import-playlist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url.trim() }),

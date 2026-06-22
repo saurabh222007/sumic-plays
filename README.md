@@ -1,2 +1,2 @@
-# SUMIC
+# Sumic
 some mUsick

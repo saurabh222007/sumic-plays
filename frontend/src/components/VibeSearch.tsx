@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { API_URL } from '../config';
 import { Sparkles, Loader2, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayerStore, type Track } from '../store/usePlayerStore';
@@ -35,7 +36,7 @@ export function VibeSearch() {
       const tracks = await Promise.all(
         queries.map(async (q) => {
           try {
-            const res = await fetch(`http://localhost:5000/api/music/search?q=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(8000) });
+            const res = await fetch(`${API_URL}/api/music/search?q=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(8000) });
             if (!res.ok) return null;
             const data = await res.json();
             return Array.isArray(data) && data.length ? (data[0] as Track) : null;

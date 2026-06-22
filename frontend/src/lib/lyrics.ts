@@ -1,3 +1,5 @@
+import { API_URL } from '../config';
+
 export interface LyricsResult {
   plainLyrics?: string;
   syncedLyrics?: string;
@@ -5,7 +7,7 @@ export interface LyricsResult {
   artistName?: string;
 }
 
-const API = 'http://localhost:5000/api';
+const API = `${API_URL}/api`;
 
 // ─── Noise patterns (mirrors backend normalisation) ──────────────────────────
 const NOISE_PATTERNS = [

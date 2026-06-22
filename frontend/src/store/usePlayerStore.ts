@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { API_URL } from '../config';
 import { useLibraryStore } from './useLibraryStore';
 import { fetchRecommendations } from '../lib/musicDiscovery';
 
@@ -48,7 +49,7 @@ interface PlayerState {
 }
 
 function streamUrlFor(track: Track): string {
-  return `http://localhost:5000/api/music/stream/${track.id}`;
+  return `${API_URL}/api/music/stream/${track.id}`;
 }
 
 function shuffleArray<T>(arr: T[]): T[] {
