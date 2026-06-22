@@ -1,2 +1,2 @@
-# sUm-mUsick
-sUm mUsick
+# SUMIC
+some mUsick
