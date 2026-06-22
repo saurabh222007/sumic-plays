@@ -1,105 +1,219 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useRef } from 'react';
+import { motion, type Variants } from 'framer-motion';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
+// ─── Animated heart SVG ───────────────────────────────────────────────────────
+function HeartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor" aria-hidden="true">
+      <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/>
+    </svg>
+  );
+}
+
+function addRipple(e: React.MouseEvent<HTMLButtonElement>) {
+  const btn = e.currentTarget;
+  const circle = document.createElement('span');
+  const rect   = btn.getBoundingClientRect();
+  circle.className = 'ripple';
+  circle.style.left = `${e.clientX - rect.left}px`;
+  circle.style.top  = `${e.clientY - rect.top}px`;
+  btn.appendChild(circle);
+  setTimeout(() => circle.remove(), 600);
+}
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0, y: 32, scale: 0.97 },
+  visible: {
+    opacity: 1, y: 0, scale: 1,
+    transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as any },
+  },
+};
+
+// Per-element delay helpers
+const fadeUp = (delay: number) => ({
+  initial: { opacity: 0, y: 14 },
+  animate: { opacity: 1, y: 0 },
+  transition: { delay, duration: 0.4, ease: 'easeOut' as const },
+});
+
+// Pre-generate particles once so they don't re-randomize on render
+const PARTICLES = Array.from({ length: 28 }, (_, i) => ({
+  id: i,
+  x:  Math.random() * 100,   // % of viewport width
+  size: Math.random() * 5 + 3,
+  dur: Math.random() * 14 + 9,
+  delay: Math.random() * 8,
+  opacity: Math.random() * 0.35 + 0.1,
+}));
+
 export function Auth() {
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey]   = useState('');
+  const [shaking, setShaking] = useState(false);
   const { loginWithKey, loginAsGuest } = useAuthStore();
   const navigate = useNavigate();
+  const inputRef  = useRef<HTMLInputElement>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (apiKey.trim()) {
-      loginWithKey(apiKey.trim());
-      navigate('/');
+    if (!apiKey.trim()) {
+      setShaking(true);
+      setTimeout(() => setShaking(false), 520);
+      inputRef.current?.focus();
+      return;
     }
+    loginWithKey(apiKey.trim());
+    navigate('/');
   };
 
-  const handleGuest = () => {
+  const handleGuest = (e: React.MouseEvent<HTMLButtonElement>) => {
+    addRipple(e);
     loginAsGuest();
     navigate('/');
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
-      {/* Animated Background Particles */}
-      <div className="absolute inset-0 z-0">
-        {[...Array(20)].map((_, i) => (
+    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden px-4 select-none">
+      {/* Ambient glow orbs */}
+      <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-primary/8 blur-[130px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-accent/6 blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-primary/4 blur-[180px] pointer-events-none" />
+
+      {/* Floating particles */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        {PARTICLES.map((p) => (
           <motion.div
-            key={i}
-            className="absolute bg-primary rounded-full opacity-20"
-            initial={{
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
-              scale: Math.random() * 0.5 + 0.5,
+            key={p.id}
+            className="absolute rounded-full bg-primary"
+            style={{
+              left: `${p.x}%`,
+              bottom: '-10px',
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              opacity: 0,
             }}
             animate={{
-              y: [null, Math.random() * -500],
-              opacity: [0.2, 0],
+              y: [0, -(typeof window !== 'undefined' ? window.innerHeight + 40 : 900)],
+              opacity: [0, p.opacity, p.opacity * 0.6, 0],
             }}
             transition={{
-              duration: Math.random() * 10 + 10,
+              duration: p.dur,
+              delay: p.delay,
               repeat: Infinity,
-              ease: "linear"
-            }}
-            style={{
-              width: Math.random() * 4 + 2 + 'px',
-              height: Math.random() * 4 + 2 + 'px',
+              ease: 'linear',
             }}
           />
         ))}
       </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="z-10 bg-[#121212] p-10 rounded-2xl border border-[#282828] shadow-2xl w-full max-w-md"
+      {/* Card */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="z-10 bg-surface/55 backdrop-blur-2xl p-8 md:p-11 rounded-3xl border border-glass-border shadow-elevated w-full max-w-md relative overflow-hidden"
       >
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-[0_0_20px_#1DB954]">
-            <span className="text-black font-bold text-2xl">S</span>
-          </div>
-          <h1 className="text-4xl font-bold text-white tracking-wider">Sumic</h1>
-        </div>
+        {/* Interior glow */}
+        <div className="absolute -top-12 -left-12 w-48 h-48 bg-primary/12 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-8 -right-8 w-40 h-40 bg-accent/8 rounded-full blur-2xl pointer-events-none" />
 
-        <h2 className="text-xl text-center text-text-secondary mb-8 font-medium">Your Music. Your Vibe.</h2>
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Gemini API Key</label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Enter key to unlock Sumic AI"
-              className="w-full bg-[#1e1e1e] border border-[#333] rounded p-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-primary text-black font-bold py-3 rounded-full flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform cursor-pointer"
+        <div className="relative z-10">
+          {/* Brand */}
+          <motion.div
+            {...fadeUp(0.3)}
+            className="flex flex-col items-center mb-9"
           >
-            <Sparkles size={20} />
-            Unlock AI Features
-          </button>
-        </form>
+            {/* Pulsing heart */}
+            <div className="relative mb-5">
+              <div className="absolute inset-0 rounded-full bg-primary/30 blur-xl scale-150 animate-pulse-glow" />
+              <motion.div
+                className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center text-white shadow-glow-primary"
+                style={{ filter: 'drop-shadow(0 0 16px rgba(139, 92, 246, 0.6))' }}
+                animate={{
+                  scale: [1, 1.14, 1.06, 1],
+                  filter: [
+                    'drop-shadow(0 0 10px rgba(139,92,246,0.5))',
+                    'drop-shadow(0 0 24px rgba(139,92,246,0.9))',
+                    'drop-shadow(0 0 16px rgba(139,92,246,0.7))',
+                    'drop-shadow(0 0 10px rgba(139,92,246,0.5))',
+                  ],
+                }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <HeartIcon />
+              </motion.div>
+            </div>
 
-        <div className="mt-6 flex items-center gap-4">
-          <div className="h-px bg-[#333] flex-1"></div>
-          <span className="text-text-secondary text-sm">OR</span>
-          <div className="h-px bg-[#333] flex-1"></div>
+            <h1 className="text-4xl font-black tracking-widest text-text-primary uppercase">
+              SUMIC
+            </h1>
+            <p className="text-[11px] font-semibold text-text-muted tracking-[0.18em] uppercase mt-1.5 text-center leading-relaxed">
+              Crafted by Someone, Synced for Everyone
+            </p>
+          </motion.div>
+
+          {/* Form */}
+          <motion.form
+            {...fadeUp(0.46)}
+            onSubmit={handleLogin}
+            className="space-y-4"
+          >
+            <div>
+              <label className="block text-[11px] font-bold text-text-secondary uppercase tracking-[0.14em] mb-2">
+                Gemini API Key
+              </label>
+              <motion.div animate={shaking ? { x: [-6, 6, -4, 4, -2, 2, 0] } : { x: 0 }} transition={{ duration: 0.45 }}>
+                <input
+                  ref={inputRef}
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Enter key to unlock AI Vibe Search…"
+                  className="w-full bg-surface-light hover:bg-surface-hover border border-glass-border rounded-2xl p-4 text-text-primary field-focus focus:border-primary/40 transition-all text-sm placeholder:text-text-muted"
+                />
+              </motion.div>
+            </div>
+
+            <button
+              type="submit"
+              className="ripple-container w-full bg-primary hover:bg-primary-light text-black font-extrabold py-4 rounded-2xl flex items-center justify-center gap-2 btn-interactive shadow-md text-sm cursor-pointer"
+              onClick={(e) => addRipple(e as any)}
+            >
+              <Sparkles size={17} />
+              Unlock AI Vibe Search
+            </button>
+          </motion.form>
+
+          {/* Divider */}
+          <motion.div
+            {...fadeUp(0.54)}
+            className="my-5 flex items-center gap-4"
+          >
+            <div className="h-px bg-glass-border flex-1" />
+            <span className="text-text-muted text-[10px] font-bold uppercase tracking-wider">or</span>
+            <div className="h-px bg-glass-border flex-1" />
+          </motion.div>
+
+          {/* Guest */}
+          <motion.div {...fadeUp(0.62)}>
+            <button
+              onClick={handleGuest}
+              className="ripple-container w-full bg-surface-light hover:bg-surface-hover border border-glass-border text-text-primary font-bold py-4 rounded-2xl flex items-center justify-center gap-2 btn-interactive cursor-pointer text-sm"
+            >
+              <span>Continue in Guest Mode</span>
+              <ArrowRight size={15} />
+            </button>
+          </motion.div>
+
+          <motion.p
+            {...fadeUp(0.70)}
+            className="text-[10px] text-text-muted text-center mt-7 leading-relaxed"
+          >
+            Guest mode lets you search, stream, browse vibe playlists, and view spotlights for free.
+          </motion.p>
         </div>
-
-        <button
-          onClick={handleGuest}
-          className="w-full mt-6 bg-transparent border border-text-secondary text-white font-bold py-3 rounded-full flex items-center justify-center gap-2 hover:border-white hover:bg-[#1a1a1a] transition cursor-pointer"
-        >
-          Continue as Guest
-          <ArrowRight size={20} />
-        </button>
       </motion.div>
     </div>
   );

@@ -17,6 +17,7 @@ interface LibraryState {
   createPlaylist: (name: string) => void;
   deletePlaylist: (id: string) => void;
   addTrackToPlaylist: (playlistId: string, track: Track) => void;
+  removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   addRecent: (track: Track) => void;
 }
 
@@ -38,7 +39,12 @@ export const useLibraryStore = create<LibraryState>()(
       })),
       addTrackToPlaylist: (playlistId, track) => set((state) => ({
         playlists: state.playlists.map((p) => 
-          p.id === playlistId ? { ...p, tracks: [...p.tracks, track] } : p
+          p.id === playlistId ? { ...p, tracks: [...p.tracks.filter((t) => t.id !== track.id), track] } : p
+        )
+      })),
+      removeTrackFromPlaylist: (playlistId, trackId) => set((state) => ({
+        playlists: state.playlists.map((p) => 
+          p.id === playlistId ? { ...p, tracks: p.tracks.filter((t) => t.id !== trackId) } : p
         )
       })),
       addRecent: (track) => set((state) => {
