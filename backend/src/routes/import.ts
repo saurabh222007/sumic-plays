@@ -3,6 +3,7 @@ import axios from 'axios';
 import { exec } from 'child_process';
 import util from 'util';
 import path from 'path';
+import fs from 'fs';
 import { rankTracks } from '../lib/musicRanking';
 import type { MusicTrack } from '../lib/musicRanking';
 
@@ -195,29 +196,43 @@ async function scrapeYouTubePlaylist(playlistId: string): Promise<{ name: string
   // Fallback: use yt-dlp to extract playlist
   try {
     console.log('🔄 Falling back to yt-dlp for YouTube playlist...');
-    const binary = path.resolve(__dirname, '../../node_modules/youtube-dl-exec/bin/yt-dlp.exe');
-    const { stdout } = await execPromise(
-      `"${binary}" "https://www.youtube.com/playlist?list=${playlistId}" --flat-playlist --dump-json --no-warnings --ignore-errors`,
-      { maxBuffer: 1024 * 1024 * 50, timeout: 30000 }
-    );
+    const base = path.resolve(__dirname, '../../node_modules/youtube-dl-exec/bin');
+    const candidates = [path.join(base, 'yt-dlp'), path.join(base, 'yt-dlp.exe'), path.join(base, 'yt-dlp.cmd')];
+    let binary = candidates.find(c => { try { return fs.existsSync(c); } catch { return false; } });
+    if (!binary) {
+      binary = path.join(base, 'yt-dlp.exe');
+      console.warn('⚠ yt-dlp binary not found in expected locations, falling back to', binary);
+    } else {
+      console.log('✓ Found yt-dlp binary at:', binary);
+    }
 
-    const entries = stdout
-      .split('\n')
-      .map((line: string) => line.trim())
-      .filter(Boolean)
-      .map((line: string) => { try { return JSON.parse(line); } catch { return null; } })
-      .filter(Boolean);
+    const cmd = `"${binary}" "https://www.youtube.com/playlist?list=${playlistId}" --flat-playlist --dump-json --no-warnings --ignore-errors`;
+    console.log('▶ Executing command:', cmd);
+    try {
+      const { stdout } = await execPromise(cmd, { maxBuffer: 1024 * 1024 * 50, timeout: 30000 });
+      const entries = String(stdout)
+        .split('\n')
+        .map((line: string) => line.trim())
+        .filter(Boolean)
+        .map((line: string) => { try { return JSON.parse(line); } catch { return null; } })
+        .filter(Boolean);
 
-    const name = entries[0]?.playlist_title || 'Imported YouTube Playlist';
-    const tracks = entries.map((e: any) => ({
-      title: e.title || 'Unknown',
-      artist: e.uploader || e.channel || 'Unknown Artist',
-      videoId: e.id || '',
-    }));
+      const name = entries[0]?.playlist_title || 'Imported YouTube Playlist';
+      const tracks = entries.map((e: any) => ({
+        title: e.title || 'Unknown',
+        artist: e.uploader || e.channel || 'Unknown Artist',
+        videoId: e.id || '',
+      }));
 
-    return { name, tracks };
+      return { name, tracks };
+    } catch (execErr: any) {
+      console.error('❌ yt-dlp exec error (playlist):', execErr && execErr.message);
+      if (execErr && typeof execErr.stdout !== 'undefined') console.error('--- stdout:', String(execErr.stdout).slice(0, 2000));
+      if (execErr && typeof execErr.stderr !== 'undefined') console.error('--- stderr:', String(execErr.stderr).slice(0, 2000));
+      throw new Error('Failed to fetch YouTube playlist. Make sure the playlist is public.');
+    }
   } catch (err) {
-    console.error('❌ yt-dlp playlist error:', (err as any)?.message);
+    console.error('❌ yt-dlp playlist error (outer):', (err as any)?.message || err);
     throw new Error('Failed to fetch YouTube playlist. Make sure the playlist is public.');
   }
 }
@@ -258,11 +273,19 @@ async function searchSingleTrack(query: string): Promise<MusicTrack | null> {
 
   // Reliable fallback: yt-dlp local search
   try {
-    const binary = path.resolve(__dirname, '../../node_modules/youtube-dl-exec/bin/yt-dlp.exe');
-    const { stdout } = await execPromise(
-      `"${binary}" "ytsearch3:${query}" --dump-json --no-playlist --ignore-errors --no-warnings --flat-playlist`,
-      { maxBuffer: 1024 * 1024 * 5, timeout: 12000 }
-    );
+    const base = path.resolve(__dirname, '../../node_modules/youtube-dl-exec/bin');
+    const candidates = [path.join(base, 'yt-dlp'), path.join(base, 'yt-dlp.exe'), path.join(base, 'yt-dlp.cmd')];
+    let binary = candidates.find(c => { try { return fs.existsSync(c); } catch { return false; } });
+    if (!binary) {
+      binary = path.join(base, 'yt-dlp.exe');
+      console.warn('⚠ yt-dlp binary not found in expected locations, falling back to', binary);
+    } else {
+      console.log('✓ Found yt-dlp binary at:', binary);
+    }
+
+    const cmd = `"${binary}" "ytsearch3:${query}" --dump-json --no-playlist --ignore-errors --no-warnings --flat-playlist`;
+    console.log('▶ Executing command:', cmd);
+    const { stdout } = await execPromise(cmd, { maxBuffer: 1024 * 1024 * 5, timeout: 12000 });
 
     const results = stdout
       .split('\n')
@@ -289,7 +312,7 @@ async function searchSingleTrack(query: string): Promise<MusicTrack | null> {
       return ranked[0] || results[0] || null;
     }
   } catch (err) {
-    console.error(`❌ yt-dlp search failed for "${query}":`, (err as any)?.message);
+    console.error(`❌ yt-dlp search failed for "${query}":`, (err as any)?.message || err);
   }
 
   return null;

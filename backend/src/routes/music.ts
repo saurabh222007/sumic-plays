@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { exec } from 'child_process';
 import util from 'util';
 import path from 'path';
+import fs from 'fs';
 import axios from 'axios';
 import { rankTracks, rankTrendingTracks, recommendationQueries, trendingQueries } from '../lib/musicRanking';
 import type { MusicTrack } from '../lib/musicRanking';
@@ -52,7 +53,29 @@ async function invidiousSearch(query: string): Promise<any[]> {
 }
 
 async function getYtDlpBinary() {
-  return path.resolve(__dirname, '../../node_modules/youtube-dl-exec/bin/yt-dlp.exe');
+  // Try platform-appropriate binary names and common locations
+  const base = path.resolve(__dirname, '../../node_modules/youtube-dl-exec/bin');
+  const candidates = [
+    path.join(base, 'yt-dlp'),
+    path.join(base, 'yt-dlp.exe'),
+    path.join(base, 'yt-dlp.cmd'),
+  ];
+
+  for (const c of candidates) {
+    try {
+      if (fs.existsSync(c)) {
+        console.log(`✓ Found yt-dlp binary at: ${c}`);
+        return c;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // Fallback to original path (may fail on non-Windows)
+  const fallback = path.join(base, 'yt-dlp.exe');
+  console.warn(`⚠ yt-dlp binary not found in expected locations, falling back to: ${fallback}`);
+  return fallback;
 }
 
 function queryString(value: unknown): string {
@@ -79,29 +102,40 @@ async function executeSearch(query: string): Promise<any[]> {
   try {
     console.log(`🔄 yt-dlp search fallback for: ${query}`);
     const binary = await getYtDlpBinary();
-    const { stdout } = await execPromise(
-      `"${binary}" "ytsearch10:${query}" --dump-json --no-playlist --ignore-errors --no-warnings --flat-playlist`,
-      { maxBuffer: 1024 * 1024 * 10, timeout: 8000 }
-    );
+    const cmd = `"${binary}" "ytsearch10:${query}" --dump-json --no-playlist --ignore-errors --no-warnings --flat-playlist`;
+    console.log(`▶ Executing command: ${cmd}`);
 
-    return stdout
-      .split('\n')
-      .map((line: string) => line.trim())
-      .filter(Boolean)
-      .map((line: string) => {
-        try { return JSON.parse(line); } catch { return null; }
-      })
-      .filter(Boolean)
-      .map((video: any) => ({
-        id: video.id || video.videoId || (video.url && String(video.url).split('v=')[1]) || '',
-        title: video.title || video.name || 'Unknown Title',
-        artist: video.uploader || video.channel || video.artist || 'Unknown Artist',
-        thumbnail: video.thumbnails?.[0]?.url || video.thumbnail || `https://img.youtube.com/vi/${video.id}/0.jpg`,
-        duration: video.duration || video.lengthSeconds || 0,
-        url: video.url || video.webpage_url || `https://www.youtube.com/watch?v=${video.id}`,
-      }));
+    try {
+      const { stdout } = await execPromise(cmd, { maxBuffer: 1024 * 1024 * 10, timeout: 8000 });
+      console.log(`--- yt-dlp stdout (search) length: ${String(stdout).length}`);
+
+      return String(stdout)
+        .split('\n')
+        .map((line: string) => line.trim())
+        .filter(Boolean)
+        .map((line: string) => {
+          try { return JSON.parse(line); } catch (e) { console.warn('⚠ Failed to parse yt-dlp JSON line:', e); return null; }
+        })
+        .filter(Boolean)
+        .map((video: any) => ({
+          id: video.id || video.videoId || (video.url && String(video.url).split('v=')[1]) || '',
+          title: video.title || video.name || 'Unknown Title',
+          artist: video.uploader || video.channel || video.artist || 'Unknown Artist',
+          thumbnail: video.thumbnails?.[0]?.url || video.thumbnail || `https://img.youtube.com/vi/${video.id}/0.jpg`,
+          duration: video.duration || video.lengthSeconds || 0,
+          url: video.url || video.webpage_url || `https://www.youtube.com/watch?v=${video.id}`,
+        }));
+    } catch (execErr: any) {
+      console.error('❌ yt-dlp fallback exec error:', execErr && execErr.message);
+      if (execErr && typeof execErr.stdout !== 'undefined') console.error('--- stdout:', String(execErr.stdout).slice(0, 2000));
+      if (execErr && typeof execErr.stderr !== 'undefined') console.error('--- stderr:', String(execErr.stderr).slice(0, 2000));
+      if (execErr && execErr.code) console.error('--- exit code:', execErr.code);
+      if (execErr && execErr.errno) console.error('--- errno:', execErr.errno);
+      // Bubble up so caller can handle; return empty to keep current behavior but with logs
+      return [];
+    }
   } catch (err) {
-    console.error('❌ yt-dlp fallback error:', err);
+    console.error('❌ yt-dlp fallback error (outer):', err);
     return [];
   }
 }
@@ -256,42 +290,52 @@ router.get('/stream/:id', async (req, res) => {
       
       // Add random user agent and headers to avoid rate limiting
       const randomUserAgent = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.${Math.floor(Math.random() * 10000)}.0 Safari/537.36`;
-      
-      const { stdout } = await execPromise(
-        `"${binary}" ${url} -f "bestaudio[ext=m4a]/bestaudio/best" --get-url --no-warnings --user-agent "${randomUserAgent}"`,
-        { maxBuffer: 1024 * 1024 * 10, timeout: 20000 }
-      );
-      
-      const streamUrl = stdout.trim();
+      const cmd = `"${binary}" ${url} -f "bestaudio[ext=m4a]/bestaudio/best" --get-url --no-warnings --user-agent "${randomUserAgent}"`;
+      console.log(`▶ Executing stream command: ${cmd}`);
 
-      if (!streamUrl) {
-        throw new Error('No stream URL found in response');
-      }
-
-      console.log(`✓ Stream URL obtained for: ${id}, now proxying stream...`);
-      
-      // Proxy the stream through our server to avoid CORS issues
       try {
-        const audioResponse = await axios.get(streamUrl, {
-          responseType: 'stream',
-          timeout: 30000,
-          headers: {
-            'User-Agent': randomUserAgent
-          }
-        });
+        const { stdout } = await execPromise(cmd, { maxBuffer: 1024 * 1024 * 10, timeout: 20000 });
+        console.log(`--- yt-dlp stdout (stream) length: ${String(stdout).length}`);
+        const streamUrl = stdout.trim();
 
-        // Set proper response headers for audio streaming
-        res.setHeader('Content-Type', headerValue(audioResponse.headers['content-type']) || 'audio/mp4');
-        res.setHeader('Content-Length', headerValue(audioResponse.headers['content-length']));
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
+        if (!streamUrl) {
+          console.warn('⚠ yt-dlp returned empty stream URL for', id);
+          throw new Error('No stream URL found in response');
+        }
 
-        console.log(`✓ Streaming audio for: ${id}`);
-        audioResponse.data.pipe(res);
-        return;
-      } catch (streamError: any) {
-        console.error(`⚠ Failed to proxy stream for ${id}:`, streamError.message);
-        throw streamError;
+        console.log(`✓ Stream URL obtained for: ${id}, now proxying stream...`);
+        
+        // Proxy the stream through our server to avoid CORS issues
+        try {
+          const audioResponse = await axios.get(streamUrl, {
+            responseType: 'stream',
+            timeout: 30000,
+            headers: {
+              'User-Agent': randomUserAgent
+            }
+          });
+
+          // Set proper response headers for audio streaming
+          res.setHeader('Content-Type', headerValue(audioResponse.headers['content-type']) || 'audio/mp4');
+          res.setHeader('Content-Length', headerValue(audioResponse.headers['content-length']));
+          res.setHeader('Accept-Ranges', 'bytes');
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+
+          console.log(`✓ Streaming audio for: ${id}`);
+          audioResponse.data.pipe(res);
+          return;
+        } catch (streamError: any) {
+          console.error(`⚠ Failed to proxy stream for ${id}:`, streamError && streamError.message);
+          throw streamError;
+        }
+      } catch (execErr: any) {
+        console.error(`❌ yt-dlp exec error while fetching stream for ${id}:`, execErr && execErr.message);
+        if (execErr && typeof execErr.stdout !== 'undefined') console.error('--- stdout:', String(execErr.stdout).slice(0, 2000));
+        if (execErr && typeof execErr.stderr !== 'undefined') console.error('--- stderr:', String(execErr.stderr).slice(0, 2000));
+        if (execErr && execErr.code) console.error('--- exit code:', execErr.code);
+        if (execErr && execErr.errno) console.error('--- errno:', execErr.errno);
+        // Continue to retry logic below
+        throw execErr;
       }
     } catch (error: any) {
       lastError = error;
