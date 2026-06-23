@@ -34,7 +34,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
 
   // Startup diagnostics: check yt-dlp binary and ffmpeg availability
   try {
