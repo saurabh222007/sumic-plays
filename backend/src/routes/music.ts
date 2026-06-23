@@ -79,7 +79,7 @@ async function getYtDlpBinary() {
 }
 
 // Safe runner: try programmatic API first, fall back to CLI exec
-async function runYtDlpSearch(query: string, cliCmd?: string): Promise<string> {
+async function runYtDlpSearch(query: string, cliCmd?: string): Promise<{ stdout: string; source: string }> {
   // Attempt programmatic API
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -95,9 +95,9 @@ async function runYtDlpSearch(query: string, cliCmd?: string): Promise<string> {
           noWarnings: true,
         });
         // The API may return a string or object
-        if (typeof out === 'string') return out;
-        if ((out as any)?.stdout) return (out as any).stdout;
-        return JSON.stringify(out);
+        if (typeof out === 'string') return { stdout: out, source: 'programmatic' };
+        if ((out as any)?.stdout) return { stdout: (out as any).stdout, source: 'programmatic' };
+        return { stdout: JSON.stringify(out), source: 'programmatic' };
       } catch (apiErr) {
         console.warn('⚠ programmatic youtube-dl-exec failed:', (apiErr as any)?.message || apiErr);
         // fall through to CLI fallback
@@ -114,12 +114,12 @@ async function runYtDlpSearch(query: string, cliCmd?: string): Promise<string> {
     const cmd = cliCmd || `"${binary}" "ytsearch10:${query}" --dump-json --no-playlist --ignore-errors --no-warnings --flat-playlist`;
     console.log(`▶ Falling back to CLI: ${cmd}`);
     const { stdout } = await execPromise(cmd, { maxBuffer: 1024 * 1024 * 10, timeout: 8000 });
-    return String(stdout || '');
+    return { stdout: String(stdout || ''), source: 'cli' };
   } catch (cliErr: any) {
     console.error('❌ yt-dlp fallback exec error (search):', cliErr && cliErr.message);
     if (cliErr && typeof cliErr.stdout !== 'undefined') console.error('--- stdout:', String(cliErr.stdout).slice(0, 2000));
     if (cliErr && typeof cliErr.stderr !== 'undefined') console.error('--- stderr:', String(cliErr.stderr).slice(0, 2000));
-    return '';
+    return { stdout: '', source: 'error' };
   }
 }
 
@@ -151,10 +151,10 @@ async function executeSearch(query: string): Promise<any[]> {
     console.log(`▶ Executing command: ${cmd}`);
 
     try {
-      const stdout = await runYtDlpSearch(query, cmd);
-      console.log(`--- yt-dlp stdout (search) length: ${String(stdout).length}`);
+      const result = await runYtDlpSearch(query, cmd);
+      console.log(`--- yt-dlp stdout (search) length: ${String(result.stdout).length}; source=${result.source}`);
 
-      return String(stdout)
+      return String(result.stdout)
         .split('\n')
         .map((line: string) => line.trim())
         .filter(Boolean)
@@ -187,12 +187,15 @@ async function executeSearch(query: string): Promise<any[]> {
 
 async function fetchRankedSearch(query: string, limit = 12): Promise<MusicTrack[]> {
   const mapped = await executeSearch(query);
-  return rankTracks(query, mapped, {
+  console.log(`▶ fetchRankedSearch: query="${query}", rawCandidates=${mapped.length}`);
+  const ranked = rankTracks(query, mapped, {
     limit,
     minDuration: 60,
     maxDuration: 600,
     preferOriginals: true,
   });
+  console.log(`↳ fetchRankedSearch: query="${query}", ranked=${ranked.length}`);
+  return ranked;
 }
 
 function headerValue(value: unknown): string {
@@ -254,6 +257,8 @@ router.get('/trending', async (_req, res) => {
     for (const query of queries) {
       try {
         const results = await fetchRankedSearch(query, 8);
+        console.log(`• Trending query "${query}" returned ${results.length} ranked results`);
+        if (!Array.isArray(results) || results.length === 0) console.log(`  - No results for trending query: "${query}"`);
         resultsArray.push(results);
       } catch (err) {
         console.error(`Warning: Failed to fetch trending search for "${query}":`, err);
