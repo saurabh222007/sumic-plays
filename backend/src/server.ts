@@ -34,6 +34,42 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Temporary debug endpoint to verify yt-dlp / youtube-dl-exec availability in production
+app.get('/debug/yt-dlp-check', async (_req, res) => {
+  const results: any = { programmatic: null, cli: null };
+  try {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const ytdl = require('youtube-dl-exec');
+      results.programmatic = { available: Boolean(typeof ytdl === 'function') };
+    } catch (e) {
+      results.programmatic = { available: false, error: String(e) };
+    }
+
+    // CLI check
+    try {
+      const base = path.resolve(__dirname, '../node_modules/youtube-dl-exec/bin');
+      const candidates = [
+        path.join(base, 'yt-dlp'),
+        path.join(base, 'yt-dlp.exe'),
+        path.join(base, 'yt-dlp.cmd'),
+      ];
+      let binary: string | null = null;
+      for (const c of candidates) if (fs.existsSync(c)) { binary = c; break; }
+      if (!binary) binary = candidates[1];
+
+      const { stdout, stderr } = await execPromise(`"${binary}" --version`, { timeout: 5000 });
+      results.cli = { foundBinary: binary, stdout: String(stdout).trim(), stderr: String(stderr).trim() };
+    } catch (cliErr: any) {
+      results.cli = { error: cliErr && cliErr.message, stdout: String(cliErr?.stdout || ''), stderr: String(cliErr?.stderr || '') };
+    }
+
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 app.listen(PORT, async () => {
 
   // Startup diagnostics: check yt-dlp binary and ffmpeg availability

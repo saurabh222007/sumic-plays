@@ -196,6 +196,44 @@ async function scrapeYouTubePlaylist(playlistId: string): Promise<{ name: string
   // Fallback: use yt-dlp to extract playlist
   try {
     console.log('🔄 Falling back to yt-dlp for YouTube playlist...');
+    // Try programmatic API first
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const ytdl = require('youtube-dl-exec');
+      if (typeof ytdl === 'function') {
+        console.log('▶ Using programmatic youtube-dl-exec API for playlist');
+        const out = await ytdl(`https://www.youtube.com/playlist?list=${playlistId}`, {
+          flatPlaylist: true,
+          dumpJson: true,
+          noWarnings: true,
+          ignoreErrors: true,
+        });
+        let stdout = '';
+        if (typeof out === 'string') stdout = out;
+        else if ((out as any)?.stdout) stdout = (out as any).stdout;
+        else stdout = String(out || '');
+
+        const entries = stdout
+          .split('\n')
+          .map((line: string) => line.trim())
+          .filter(Boolean)
+          .map((line: string) => { try { return JSON.parse(line); } catch { return null; } })
+          .filter(Boolean);
+
+        const name = entries[0]?.playlist_title || 'Imported YouTube Playlist';
+        const tracks = entries.map((e: any) => ({
+          title: e.title || 'Unknown',
+          artist: e.uploader || e.channel || 'Unknown Artist',
+          videoId: e.id || '',
+        }));
+
+        return { name, tracks };
+      }
+    } catch (apiErr) {
+      console.log('⚠ programmatic youtube-dl-exec failed for playlist, falling back to CLI:', (apiErr as any)?.message || apiErr);
+    }
+
+    // CLI fallback
     const base = path.resolve(__dirname, '../../node_modules/youtube-dl-exec/bin');
     const candidates = [path.join(base, 'yt-dlp'), path.join(base, 'yt-dlp.exe'), path.join(base, 'yt-dlp.cmd')];
     let binary = candidates.find(c => { try { return fs.existsSync(c); } catch { return false; } });
@@ -225,10 +263,8 @@ async function scrapeYouTubePlaylist(playlistId: string): Promise<{ name: string
       }));
 
       return { name, tracks };
-    } catch (execErr: any) {
-      console.error('❌ yt-dlp exec error (playlist):', execErr && execErr.message);
-      if (execErr && typeof execErr.stdout !== 'undefined') console.error('--- stdout:', String(execErr.stdout).slice(0, 2000));
-      if (execErr && typeof execErr.stderr !== 'undefined') console.error('--- stderr:', String(execErr.stderr).slice(0, 2000));
+    } catch (err) {
+      console.error('❌ yt-dlp playlist error (CLI fallback):', (err as any)?.message || err);
       throw new Error('Failed to fetch YouTube playlist. Make sure the playlist is public.');
     }
   } catch (err) {
@@ -273,6 +309,53 @@ async function searchSingleTrack(query: string): Promise<MusicTrack | null> {
 
   // Reliable fallback: yt-dlp local search
   try {
+    // Try programmatic API first
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const ytdl = require('youtube-dl-exec');
+      if (typeof ytdl === 'function') {
+        console.log('▶ Using programmatic youtube-dl-exec API for single-track search');
+        const out = await ytdl(`ytsearch3:${query}`, {
+          dumpJson: true,
+          flatPlaylist: true,
+          noPlaylist: true,
+          ignoreErrors: true,
+          noWarnings: true,
+        });
+        let stdout = '';
+        if (typeof out === 'string') stdout = out;
+        else if ((out as any)?.stdout) stdout = (out as any).stdout;
+        else stdout = String(out || '');
+
+        const results = stdout
+          .split('\n')
+          .map((line: string) => line.trim())
+          .filter(Boolean)
+          .map((line: string) => { try { return JSON.parse(line); } catch { return null; } })
+          .filter(Boolean)
+          .map((video: any) => ({
+            id: video.id || video.videoId || '',
+            title: video.title || 'Unknown Title',
+            artist: video.uploader || video.channel || video.artist || 'Unknown Artist',
+            thumbnail: video.thumbnails?.[0]?.url || video.thumbnail || `https://img.youtube.com/vi/${video.id}/0.jpg`,
+            duration: video.duration || 0,
+            url: video.url || video.webpage_url || `https://www.youtube.com/watch?v=${video.id}`,
+          }));
+
+        if (results.length > 0) {
+          const ranked = rankTracks(query, results, {
+            limit: 1,
+            minDuration: 30,
+            maxDuration: 720,
+            preferOriginals: true,
+          });
+          return ranked[0] || results[0] || null;
+        }
+      }
+    } catch (apiErr) {
+      console.log('⚠ programmatic youtube-dl-exec failed for single-track search, falling back to CLI:', (apiErr as any)?.message || apiErr);
+    }
+
     const base = path.resolve(__dirname, '../../node_modules/youtube-dl-exec/bin');
     const candidates = [path.join(base, 'yt-dlp'), path.join(base, 'yt-dlp.exe'), path.join(base, 'yt-dlp.cmd')];
     let binary = candidates.find(c => { try { return fs.existsSync(c); } catch { return false; } });

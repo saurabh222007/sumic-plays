@@ -78,6 +78,51 @@ async function getYtDlpBinary() {
   return fallback;
 }
 
+// Safe runner: try programmatic API first, fall back to CLI exec
+async function runYtDlpSearch(query: string, cliCmd?: string): Promise<string> {
+  // Attempt programmatic API
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const ytdl = require('youtube-dl-exec');
+    if (typeof ytdl === 'function') {
+      console.log('▶ Using programmatic youtube-dl-exec API for search');
+      try {
+        const out = await ytdl(`ytsearch10:${query}`, {
+          dumpJson: true,
+          flatPlaylist: true,
+          noPlaylist: true,
+          ignoreErrors: true,
+          noWarnings: true,
+        });
+        // The API may return a string or object
+        if (typeof out === 'string') return out;
+        if ((out as any)?.stdout) return (out as any).stdout;
+        return JSON.stringify(out);
+      } catch (apiErr) {
+        console.warn('⚠ programmatic youtube-dl-exec failed:', (apiErr as any)?.message || apiErr);
+        // fall through to CLI fallback
+      }
+    }
+  } catch (e) {
+    // module not available or require failed — will use CLI fallback
+    console.log('⚠ youtube-dl-exec programmatic API not available, falling back to CLI');
+  }
+
+  // CLI fallback
+  try {
+    const binary = await getYtDlpBinary();
+    const cmd = cliCmd || `"${binary}" "ytsearch10:${query}" --dump-json --no-playlist --ignore-errors --no-warnings --flat-playlist`;
+    console.log(`▶ Falling back to CLI: ${cmd}`);
+    const { stdout } = await execPromise(cmd, { maxBuffer: 1024 * 1024 * 10, timeout: 8000 });
+    return String(stdout || '');
+  } catch (cliErr: any) {
+    console.error('❌ yt-dlp fallback exec error (search):', cliErr && cliErr.message);
+    if (cliErr && typeof cliErr.stdout !== 'undefined') console.error('--- stdout:', String(cliErr.stdout).slice(0, 2000));
+    if (cliErr && typeof cliErr.stderr !== 'undefined') console.error('--- stderr:', String(cliErr.stderr).slice(0, 2000));
+    return '';
+  }
+}
+
 function queryString(value: unknown): string {
   if (Array.isArray(value)) return value[0] || '';
   return value == null ? '' : String(value);
@@ -106,7 +151,7 @@ async function executeSearch(query: string): Promise<any[]> {
     console.log(`▶ Executing command: ${cmd}`);
 
     try {
-      const { stdout } = await execPromise(cmd, { maxBuffer: 1024 * 1024 * 10, timeout: 8000 });
+      const stdout = await runYtDlpSearch(query, cmd);
       console.log(`--- yt-dlp stdout (search) length: ${String(stdout).length}`);
 
       return String(stdout)
@@ -294,7 +339,35 @@ router.get('/stream/:id', async (req, res) => {
       console.log(`▶ Executing stream command: ${cmd}`);
 
       try {
-        const { stdout } = await execPromise(cmd, { maxBuffer: 1024 * 1024 * 10, timeout: 20000 });
+        // For stream URL, try programmatic first then CLI fallback
+        let stdout = '';
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const ytdl = require('youtube-dl-exec');
+          if (typeof ytdl === 'function') {
+            console.log('▶ Using programmatic youtube-dl-exec API for stream URL');
+            const out = await ytdl(url, {
+              getUrl: true,
+              format: 'bestaudio[ext=m4a]/bestaudio/best',
+              noWarnings: true,
+              userAgent: randomUserAgent,
+            });
+            if (typeof out === 'string') stdout = out;
+            else if ((out as any)?.stdout) stdout = (out as any).stdout;
+            else stdout = String(out || '');
+          }
+        } catch (progErr) {
+          console.log('⚠ programmatic youtube-dl-exec not usable for stream, falling back to CLI');
+        }
+
+        if (!stdout) {
+          const binary = await getYtDlpBinary();
+          const cmdStream = `"${binary}" ${url} -f "bestaudio[ext=m4a]/bestaudio/best" --get-url --no-warnings --user-agent "${randomUserAgent}"`;
+          console.log(`▶ Falling back to CLI stream command: ${cmdStream}`);
+          const execRes = await execPromise(cmdStream, { maxBuffer: 1024 * 1024 * 10, timeout: 20000 });
+          stdout = String(execRes.stdout || '');
+        }
+
         console.log(`--- yt-dlp stdout (stream) length: ${String(stdout).length}`);
         const streamUrl = stdout.trim();
 
@@ -304,7 +377,7 @@ router.get('/stream/:id', async (req, res) => {
         }
 
         console.log(`✓ Stream URL obtained for: ${id}, now proxying stream...`);
-        
+
         // Proxy the stream through our server to avoid CORS issues
         try {
           const audioResponse = await axios.get(streamUrl, {
@@ -329,12 +402,9 @@ router.get('/stream/:id', async (req, res) => {
           throw streamError;
         }
       } catch (execErr: any) {
-        console.error(`❌ yt-dlp exec error while fetching stream for ${id}:`, execErr && execErr.message);
+        console.error(`❌ yt-dlp error while fetching stream for ${id}:`, execErr && execErr.message || execErr);
         if (execErr && typeof execErr.stdout !== 'undefined') console.error('--- stdout:', String(execErr.stdout).slice(0, 2000));
         if (execErr && typeof execErr.stderr !== 'undefined') console.error('--- stderr:', String(execErr.stderr).slice(0, 2000));
-        if (execErr && execErr.code) console.error('--- exit code:', execErr.code);
-        if (execErr && execErr.errno) console.error('--- errno:', execErr.errno);
-        // Continue to retry logic below
         throw execErr;
       }
     } catch (error: any) {
