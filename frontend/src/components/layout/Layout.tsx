@@ -5,9 +5,12 @@ import { BottomPlayer } from './BottomPlayer';
 import { MobileNav } from './MobileNav';
 import { FullscreenPlayer } from './FullscreenPlayer';
 import { useAuthStore } from '../../store/useAuthStore';
+import { usePlayerStore } from '../../store/usePlayerStore';
+import { DynamicMusicBackdrop } from '../DynamicMusicBackdrop';
 
 export function Layout() {
   const { isGuest, geminiApiKey } = useAuthStore();
+  const { currentTrack } = usePlayerStore();
 
   if (!isGuest && !geminiApiKey) {
     return <Navigate to="/login" replace />;
@@ -16,10 +19,8 @@ export function Layout() {
   return (
     <LayoutGroup>
       <div className="h-screen w-full bg-background flex flex-col overflow-hidden">
-        {/* Subtle ambient gradient */}
         <div className="fixed inset-0 pointer-events-none z-0">
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[150px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-accent/5 rounded-full blur-[120px]" />
+          <DynamicMusicBackdrop track={currentTrack} intensity="subtle" />
         </div>
 
         <div className="flex-1 flex overflow-hidden relative z-10">

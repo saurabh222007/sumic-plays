@@ -1,17 +1,29 @@
-import { useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { API_URL } from '../config';
-import { Search as SearchIcon, Sparkles, Music2, Mic2, X, Music } from 'lucide-react';
+import { Search as SearchIcon, Sparkles, Music2, Mic2, X, Music, Clock3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayerStore, type Track } from '../store/usePlayerStore';
 import { useLibraryStore } from '../store/useLibraryStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { interpretFeeling, type FeelingResult, isAiDisabled } from '../lib/gemini';
-import { buildDiscoveryQueries, buildSearchSections, dedupeTracks, rankTracks, type SearchSections } from '../lib/musicDiscovery';
+import { buildSearchSections, type SearchSections } from '../lib/musicDiscovery';
 import { TrackCard } from '../components/TrackCard';
 import { ArtistSpotlight } from '../components/ArtistSpotlight';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 
 type SearchMode = 'songs' | 'lyrics' | 'feeling';
+
+const RECENT_SEARCHES_KEY = 'sumic_recent_searches';
+const RECENT_SEARCH_LIMIT = 15;
+
+function readRecentSearches(): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 export function Search() {
   const [query, setQuery] = useState('');
@@ -22,6 +34,8 @@ export function Search() {
   const [searchSections, setSearchSections] = useState<SearchSections | null>(null);
   const [aiError, setAiError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => readRecentSearches());
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const { playQueue } = usePlayerStore();
   const { addRecent } = useLibraryStore();
   const { geminiApiKey } = useAuthStore();
@@ -29,27 +43,67 @@ export function Search() {
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const fetchTracks = useCallback(async (q: string, signal?: AbortSignal): Promise<Track[]> => {
-    const res = await fetch(`${API_URL}/api/music/search?q=${encodeURIComponent(q)}`, { signal });
-    if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
+  useEffect(() => {
+    try {
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recentSearches.slice(0, RECENT_SEARCH_LIMIT)));
+    } catch {
+      // ignore storage errors
+    }
+  }, [recentSearches]);
+
+  const rememberSearch = useCallback((value: string) => {
+    const cleaned = value.trim().replace(/\s+/g, ' ');
+    if (!cleaned) return;
+    setRecentSearches((items) => [
+      cleaned,
+      ...items.filter((item) => item.toLowerCase() !== cleaned.toLowerCase()),
+    ].slice(0, RECENT_SEARCH_LIMIT));
   }, []);
 
-  const fetchDiscoveryTracks = useCallback(async (q: string, topTrack: Track | null, signal: AbortSignal) => {
-    const queries = [
-      ...buildDiscoveryQueries(q, topTrack).slice(0, 3),
-      `${q} lyrics slowed reverb acoustic remix cover live`,
-    ];
-    const responses = await Promise.allSettled(
-      queries.map((query) => fetchTracks(query, signal).then((tracks) => tracks.slice(0, 6)))
-    );
+  const removeRecentSearch = (value: string) => {
+    setRecentSearches((items) => items.filter((item) => item !== value));
+  };
 
-    return responses.flatMap((response) => {
-      if (response.status === 'fulfilled') return response.value;
-      return [];
-    });
-  }, [fetchTracks]);
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+  };
+
+  const suggestionSeed = query.trim();
+  const recentSuggestions = recentSearches.filter((item) =>
+    !suggestionSeed || item.toLowerCase().includes(suggestionSeed.toLowerCase())
+  );
+  const generatedSuggestions = suggestionSeed.length > 0
+    ? [
+        suggestionSeed,
+        `${suggestionSeed} official`,
+        `${suggestionSeed} official audio`,
+        `${suggestionSeed} music video`,
+      ].filter((item, index, arr) => arr.findIndex((candidate) => candidate.toLowerCase() === item.toLowerCase()) === index)
+    : [];
+  const suggestions = [
+    ...recentSuggestions,
+    ...generatedSuggestions.filter((item) => !recentSuggestions.some((recent) => recent.toLowerCase() === item.toLowerCase())),
+  ].slice(0, 8);
+
+  const fetchTracks = useCallback(async (q: string, signal?: AbortSignal): Promise<Track[]> => {
+    const url = `${API_URL}/api/music/search?q=${encodeURIComponent(q)}`;
+    let attempts = 0;
+    while (attempts < 3) {
+      attempts += 1;
+      const res = await fetch(url, { signal });
+      if (res.status === 429) {
+        const ra = res.headers.get('Retry-After');
+        const wait = ra ? parseInt(ra, 10) * 1000 : Math.min(1000 * attempts, 3000);
+        console.warn(`Search rate limited, retrying after ${wait}ms`);
+        await new Promise((r) => setTimeout(r, wait));
+        continue;
+      }
+      if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    }
+    throw new Error('Search failed: rate limited');
+  }, []);
 
   // Debounced search for songs mode
   const performSearch = useCallback(async (q: string) => {
@@ -59,6 +113,7 @@ export function Search() {
       setHasSearched(false);
       return;
     }
+    rememberSearch(q);
     
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -74,14 +129,7 @@ export function Search() {
       const data = await fetchTracks(q, signal);
       if (signal.aborted) return;
       
-      const ranked = rankTracks(q, data, { limit: 60, minDuration: 45, maxDuration: 720, preferOriginals: true });
-      const topTrack = ranked.find((track) => track.version !== 'modified' && track.version !== 'lyrics' && track.version !== 'alternative') || ranked[0] || null;
-      
-      const discoveryTracks = topTrack ? await fetchDiscoveryTracks(q, topTrack, signal) : [];
-      if (signal.aborted) return;
-      
-      const sectionTracks = dedupeTracks([...data, ...discoveryTracks]);
-      const sections = buildSearchSections(q, sectionTracks, discoveryTracks);
+      const sections = buildSearchSections(q, data, []);
       
       setResults(sections.allTracks);
       setSearchSections(sections);
@@ -95,10 +143,21 @@ export function Search() {
         setLoading(false);
       }
     }
-  }, [fetchDiscoveryTracks, fetchTracks]);
+  }, [fetchTracks, rememberSearch]);
+
+  const runSearchValue = useCallback((value: string) => {
+    const cleaned = value.trim();
+    if (!cleaned) return;
+    setQuery(cleaned);
+    setShowSuggestions(false);
+    rememberSearch(cleaned);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    void performSearch(cleaned);
+  }, [performSearch, rememberSearch]);
 
   const handleInputChange = (value: string) => {
     setQuery(value);
+    setShowSuggestions(true);
     if (searchMode === 'songs') {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       // debounce to prevent excessive requests while typing
@@ -109,6 +168,8 @@ export function Search() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
+    rememberSearch(query);
+    setShowSuggestions(false);
 
     if (searchMode === 'lyrics') {
       abortRef.current?.abort();
@@ -181,6 +242,7 @@ export function Search() {
     setSearchSections(null);
     setFeelingResult(null);
     setHasSearched(false);
+    setShowSuggestions(true);
     inputRef.current?.focus();
   };
 
@@ -229,6 +291,8 @@ export function Search() {
             type="text"
             value={query}
             onChange={(e) => handleInputChange(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => window.setTimeout(() => setShowSuggestions(false), 120)}
             placeholder={
               searchMode === 'songs' ? 'Search songs, artists, albums...' :
               searchMode === 'lyrics' ? 'Search by lyrics "I found a love for me"...' :
@@ -244,6 +308,58 @@ export function Search() {
             >
               <X size={18} />
             </button>
+          )}
+          {searchMode === 'songs' && showSuggestions && suggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 rounded-2xl bg-[#0B0E10]/98 backdrop-blur-xl border border-glass-border shadow-2xl overflow-hidden">
+              {!query.trim() && recentSuggestions.length > 0 && (
+                <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">Recent Searches</p>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      clearRecentSearches();
+                    }}
+                    className="text-[11px] font-semibold text-text-muted hover:text-text-primary transition"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
+              <div className="py-1">
+                {suggestions.map((item) => {
+                  const isRecent = recentSearches.some((recent) => recent.toLowerCase() === item.toLowerCase());
+                  return (
+                    <div key={item} className="flex items-center">
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          runSearchValue(item);
+                        }}
+                        className="flex-1 flex items-center gap-3 px-4 py-2.5 text-left text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 transition"
+                      >
+                        {isRecent ? <Clock3 size={15} className="text-text-muted" /> : <SearchIcon size={15} className="text-text-muted" />}
+                        <span className="truncate">{item}</span>
+                      </button>
+                      {isRecent && (
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            removeRecentSearch(item);
+                          }}
+                          className="px-4 py-2.5 text-text-muted hover:text-red-300 transition"
+                          title="Remove recent search"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </form>
         {aiError && <p className="text-xs text-red-400 mt-2 font-semibold">{aiError}</p>}
@@ -421,7 +537,44 @@ export function Search() {
       )}
 
       {/* Empty State */}
-      {!hasSearched && (
+      {!hasSearched && searchMode === 'songs' && !query.trim() && recentSearches.length > 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="mt-8"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-text-primary">Recent Searches</h2>
+            <button
+              onClick={clearRecentSearches}
+              className="text-xs font-semibold text-text-muted hover:text-text-primary transition"
+            >
+              Clear all
+            </button>
+          </div>
+          <div className="flex flex-col gap-1 bg-surface/30 rounded-2xl border border-glass-border p-2">
+            {recentSearches.map((item) => (
+              <div key={item} className="flex items-center">
+                <button
+                  onClick={() => runSearchValue(item)}
+                  className="flex-1 flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-text-secondary hover:text-text-primary hover:bg-surface-hover transition"
+                >
+                  <Clock3 size={15} className="text-text-muted" />
+                  <span className="truncate">{item}</span>
+                </button>
+                <button
+                  onClick={() => removeRecentSearch(item)}
+                  className="px-3 py-2.5 text-text-muted hover:text-red-300 transition"
+                  title="Remove recent search"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      ) : !hasSearched && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

@@ -14,7 +14,7 @@ interface LibraryState {
   recent: Track[];
   addFavorite: (track: Track) => void;
   removeFavorite: (trackId: string) => void;
-  createPlaylist: (name: string) => void;
+  createPlaylist: (name: string, tracks?: Track[]) => string;
   deletePlaylist: (id: string) => void;
   addTrackToPlaylist: (playlistId: string, track: Track) => void;
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
@@ -31,9 +31,13 @@ export const useLibraryStore = create<LibraryState>()(
       removeFavorite: (trackId) => set((state) => ({
         favorites: state.favorites.filter((t) => t.id !== trackId),
       })),
-      createPlaylist: (name) => set((state) => ({
-        playlists: [...state.playlists, { id: Date.now().toString(), name, tracks: [] }],
-      })),
+      createPlaylist: (name, tracks = []) => {
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        set((state) => ({
+          playlists: [...state.playlists, { id, name, tracks }],
+        }));
+        return id;
+      },
       deletePlaylist: (id) => set((state) => ({
         playlists: state.playlists.filter((p) => p.id !== id),
       })),

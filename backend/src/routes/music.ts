@@ -13,42 +13,68 @@ const router = Router();
 // In-memory cache maps
 const searchCache = new Map<string, { data: any; expiry: number }>();
 const streamCache = new Map<string, { data: any; expiry: number }>();
+const rateLimitMap = new Map<string, { tokens: number; last: number }>();
 
 const CACHE_TTL_SEARCH = 30 * 60 * 1000; // 30 minutes
 const CACHE_TTL_STREAM = 60 * 60 * 1000; // 1 hour
 
-// Invidious public instances (fallback chain for reliability)
-const INVIDIOUS_INSTANCES = [
-  'https://vid.puffyan.us',
-  'https://invidious.fdn.fr',
-  'https://invidious.privacyredirect.com',
-  'https://inv.nadeko.net',
+// Invidious public instances (fallback chain) — kept empty after audit
+const INVIDIOUS_INSTANCES: string[] = [];
+
+// Piped public instances (preferred for search/trending)
+// Audited: these instances responded reliably in quick tests
+const PIPED_INSTANCES = [
+  'https://piped.video',
+  'https://piped.kavin.rocks',
 ];
 
 // Fast timeout for Invidious with fallback
 async function invidiousSearch(query: string): Promise<any[]> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-  
   for (const instance of INVIDIOUS_INSTANCES) {
+    const start = Date.now();
     try {
       const url = `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video&sort_by=relevance`;
-      const { data } = await axios.get(url, { 
-        timeout: 2500,
-        signal: controller.signal as any
-      });
-      clearTimeout(timeoutId);
+      const { data } = await axios.get(url, { timeout: 2500 });
+      const elapsed = Date.now() - start;
       if (Array.isArray(data) && data.length > 0) {
-        console.log(`✓ Invidious search succeeded via ${instance}`);
+        console.log(`✓ Invidious search succeeded via ${instance} (${elapsed}ms)`);
         return data;
       }
-    } catch (err) {
-      console.log(`⚠ Invidious instance ${instance} failed:`, (err as any)?.message);
+      console.log(`⚠ Invidious ${instance} returned empty result (${elapsed}ms)`);
+    } catch (err: any) {
+      const elapsed = Date.now() - start;
+      console.log(`⚠ Invidious instance ${instance} failed (${elapsed}ms):`, err && err.message);
       continue;
     }
   }
-  clearTimeout(timeoutId);
-  console.log('⚠ All Invidious instances failed, falling back to yt-dlp');
+  console.log('⚠ All Invidious instances failed');
+  return [];
+}
+
+// Try Piped instances first (preferred)
+async function pipedSearch(query: string): Promise<any[]> {
+  for (const instance of PIPED_INSTANCES) {
+    const start = Date.now();
+    try {
+      const url = `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`;
+      const { data } = await axios.get(url, { timeout: 4000 });
+      const elapsed = Date.now() - start;
+      if (data && Array.isArray(data) && data.length > 0) {
+        console.log(`✓ Piped search succeeded via ${instance} (${elapsed}ms)`);
+        return data;
+      }
+      if (data && Array.isArray(data.items) && data.items.length > 0) {
+        console.log(`✓ Piped (items) search succeeded via ${instance} (${elapsed}ms)`);
+        return data.items;
+      }
+      console.log(`⚠ Piped ${instance} returned empty result (${elapsed}ms)`);
+    } catch (err: any) {
+      const elapsed = Date.now() - start;
+      console.log(`⚠ Piped instance ${instance} failed (${elapsed}ms):`, err && err.message);
+      continue;
+    }
+  }
+  console.log('⚠ All Piped instances failed');
   return [];
 }
 
@@ -129,72 +155,147 @@ function queryString(value: unknown): string {
 }
 
 async function executeSearch(query: string): Promise<any[]> {
+  // 1) Try Piped (preferred)
+  const piped = await pipedSearch(query);
+  if (piped.length > 0) {
+    // Map Piped/Invidious-like items into unified shape
+    return piped
+      .filter((v: any) => !!(v.videoId || v.id || v.identifier || v.video?.videoId))
+      .map((video: any) => {
+        const vid = video.videoId || video.id || video.identifier || (video.video && video.video.videoId) || '';
+        return {
+          id: vid,
+          videoId: vid,
+          title: video.title || video.name || (video.video && video.video.title) || 'Unknown Title',
+          artist: video.author || video.uploader || video.channel || 'Unknown Artist',
+          thumbnail: video.videoThumbnails?.[4]?.url || video.videoThumbnails?.[0]?.url || video.thumbnail || `https://img.youtube.com/vi/${vid}/0.jpg`,
+          duration: video.lengthSeconds || video.duration || 0,
+          url: `https://www.youtube.com/watch?v=${vid}`,
+          viewCount: video.views || video.viewCount || video.shortViewCount || video.viewCountText,
+          likeCount: video.likes || video.likeCount,
+        };
+      });
+
+  }
+
+  // 2) Try Invidious
   const invResults = await invidiousSearch(query);
   if (invResults.length > 0) {
     return invResults
       .filter((v: any) => v.type === 'video')
       .map((video: any) => ({
         id: video.videoId,
+        videoId: video.videoId,
         title: video.title,
         artist: video.author || 'Unknown Artist',
         thumbnail: video.videoThumbnails?.[4]?.url || video.videoThumbnails?.[0]?.url || `https://img.youtube.com/vi/${video.videoId}/0.jpg`,
         duration: video.lengthSeconds || 0,
         url: `https://www.youtube.com/watch?v=${video.videoId}`,
+        viewCount: video.viewCount || video.views || video.shortViewCount || video.viewCountText,
+        likeCount: video.likeCount || video.likes,
       }));
   }
 
-  // Fallback to yt-dlp CLI if Invidious fails
+  // 3) Fallback to programmatic lightweight search (ytsr) when Piped/Invidious unavailable
   try {
-    console.log(`🔄 yt-dlp search fallback for: ${query}`);
-    const binary = await getYtDlpBinary();
-    const cmd = `"${binary}" "ytsearch10:${query}" --dump-json --no-playlist --ignore-errors --no-warnings --flat-playlist`;
-    console.log(`▶ Executing command: ${cmd}`);
-
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const debugYtsr = process.env.DEBUG_YTSR === 'true';
+    const ytsrRequire = () => require('ytsr');
+    const origError = console.error;
+    const origWarn = console.warn;
+    const origStderrWrite = process.stderr.write;
+    if (!debugYtsr) {
+      console.error = () => {};
+      console.warn = () => {};
+      process.stderr.write = () => true as any;
+    }
     try {
-      const result = await runYtDlpSearch(query, cmd);
-      console.log(`--- yt-dlp stdout (search) length: ${String(result.stdout).length}; source=${result.source}`);
+      const ytsr = ytsrRequire();
+      const start = Date.now();
+      const r = await ytsr(query, { limit: 20 });
+      const elapsed = Date.now() - start;
+      if (r && Array.isArray(r.items) && r.items.length > 0) {
+        if (debugYtsr) console.log(`✓ ytsr fallback succeeded (${elapsed}ms)`);
+        return r.items
+          .filter((it: any) => it.type === 'video')
+          .map((video: any) => ({
+            id: video.id || video.videoId || '',
+            videoId: video.id || video.videoId || '',
+            title: video.title || 'Unknown Title',
+            artist: (video.author && video.author.name) || video.uploader || 'Unknown Artist',
+            thumbnail: (video.thumbnails && video.thumbnails[0] && video.thumbnails[0].url) || `https://img.youtube.com/vi/${video.id}/0.jpg`,
+            duration: (function parseDur(d:any){ if(!d) return 0; if(typeof d==='number') return d; if(typeof d==='string'){ const parts=d.split(':').map(Number).reverse(); let s=0; for(let i=0;i<parts.length;i++){ s += (parts[i]||0)*Math.pow(60,i); } return s;} return 0;})(video.duration),
+            url: video.url || `https://www.youtube.com/watch?v=${video.id}`,
+            viewCount: video.views || video.viewCount || video.shortViewCount || video.shortViewCountText,
+          }));
+      }
+    } finally {
+      // restore console
+      console.error = origError;
+      console.warn = origWarn;
+      process.stderr.write = origStderrWrite;
+    }
+  } catch (yErr) {
+    // ytsr not available or failed — will try yt-dlp only if explicitly enabled
+    console.log('⚠ ytsr fallback unavailable or failed');
+    if (process.env.DEBUG_YTSR === 'true') console.error(yErr);
+  }
 
-      return String(result.stdout)
-        .split('\n')
-        .map((line: string) => line.trim())
-        .filter(Boolean)
-        .map((line: string) => {
-          try { return JSON.parse(line); } catch (e) { console.warn('⚠ Failed to parse yt-dlp JSON line:', e); return null; }
-        })
-        .filter(Boolean)
-        .map((video: any) => ({
-          id: video.id || video.videoId || (video.url && String(video.url).split('v=')[1]) || '',
-          title: video.title || video.name || 'Unknown Title',
-          artist: video.uploader || video.channel || video.artist || 'Unknown Artist',
-          thumbnail: video.thumbnails?.[0]?.url || video.thumbnail || `https://img.youtube.com/vi/${video.id}/0.jpg`,
-          duration: video.duration || video.lengthSeconds || 0,
-          url: video.url || video.webpage_url || `https://www.youtube.com/watch?v=${video.id}`,
-        }));
-    } catch (execErr: any) {
-      console.error('❌ yt-dlp fallback exec error:', execErr && execErr.message);
-      if (execErr && typeof execErr.stdout !== 'undefined') console.error('--- stdout:', String(execErr.stdout).slice(0, 2000));
-      if (execErr && typeof execErr.stderr !== 'undefined') console.error('--- stderr:', String(execErr.stderr).slice(0, 2000));
-      if (execErr && execErr.code) console.error('--- exit code:', execErr.code);
-      if (execErr && execErr.errno) console.error('--- errno:', execErr.errno);
-      // Bubble up so caller can handle; return empty to keep current behavior but with logs
+  // 4) Fallback to yt-dlp ONLY if explicitly enabled via env
+  if (process.env.ENABLE_YTDLP === 'true') {
+    try {
+      console.log(`🔄 yt-dlp search fallback for: ${query}`);
+      const binary = await getYtDlpBinary();
+      const cmd = `"${binary}" "ytsearch10:${query}" --dump-json --no-playlist --ignore-errors --no-warnings --flat-playlist`;
+      console.log(`▶ Executing command: ${cmd}`);
+
+      try {
+        const result = await runYtDlpSearch(query, cmd);
+        console.log(`--- yt-dlp stdout (search) length: ${String(result.stdout).length}; source=${result.source}`);
+
+        return String(result.stdout)
+          .split('\n')
+          .map((line: string) => line.trim())
+          .filter(Boolean)
+          .map((line: string) => {
+            try { return JSON.parse(line); } catch (e) { console.warn('⚠ Failed to parse yt-dlp JSON line:', e); return null; }
+          })
+          .filter(Boolean)
+          .map((video: any) => ({
+            id: video.id || video.videoId || (video.url && String(video.url).split('v=')[1]) || '',
+            videoId: video.id || video.videoId || (video.url && String(video.url).split('v=')[1]) || '',
+            title: video.title || video.name || 'Unknown Title',
+            artist: video.uploader || video.channel || video.artist || 'Unknown Artist',
+            thumbnail: video.thumbnails?.[0]?.url || video.thumbnail || `https://img.youtube.com/vi/${video.id}/0.jpg`,
+            duration: video.duration || video.lengthSeconds || 0,
+            url: video.url || video.webpage_url || `https://www.youtube.com/watch?v=${video.id}`,
+            viewCount: video.view_count || video.viewCount || video.views,
+            likeCount: video.like_count || video.likeCount || video.likes,
+          }));
+      } catch (execErr: any) {
+        console.error('❌ yt-dlp fallback exec error:', execErr && execErr.message);
+        if (execErr && typeof execErr.stdout !== 'undefined') console.error('--- stdout:', String(execErr.stdout).slice(0, 2000));
+        if (execErr && typeof execErr.stderr !== 'undefined') console.error('--- stderr:', String(execErr.stderr).slice(0, 2000));
+        return [];
+      }
+    } catch (err) {
+      console.error('❌ yt-dlp fallback error (outer):', err);
       return [];
     }
-  } catch (err) {
-    console.error('❌ yt-dlp fallback error (outer):', err);
-    return [];
   }
+
+  console.log('⚠ No search providers produced results and ENABLE_YTDLP!=true');
+  return [];
 }
 
 async function fetchRankedSearch(query: string, limit = 12): Promise<MusicTrack[]> {
   const mapped = await executeSearch(query);
-  console.log(`▶ fetchRankedSearch: query="${query}", rawCandidates=${mapped.length}`);
   const ranked = rankTracks(query, mapped, {
     limit,
-    minDuration: 60,
+    minDuration: 30,
     maxDuration: 600,
     preferOriginals: true,
   });
-  console.log(`↳ fetchRankedSearch: query="${query}", ranked=${ranked.length}`);
   return ranked;
 }
 
@@ -209,6 +310,34 @@ router.get('/search', async (req, res) => {
     return res.status(400).json({ error: 'Query parameter q is required' });
   }
 
+  // Token-bucket rate limiting per IP to allow short bursts (capacity 60, refill 1 token/sec)
+  try {
+    const ip = String(req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown');
+    const key = `rl:${ip}`;
+    const now = Date.now();
+    const refillPerSec = 1; // 60 tokens per minute
+    const capacity = 60;
+    let entry = rateLimitMap.get(key) as any;
+    if (!entry) {
+      entry = { tokens: capacity - 1, last: now };
+      rateLimitMap.set(key, entry);
+    } else {
+      const elapsed = Math.max(0, now - entry.last);
+      const add = Math.floor(elapsed / 1000 * refillPerSec);
+      entry.tokens = Math.min(capacity, (entry.tokens || 0) + add);
+      entry.last = now;
+      if ((entry.tokens || 0) <= 0) {
+        const waitSec = Math.ceil((1 - (entry.tokens || 0)) / refillPerSec);
+        res.setHeader('Retry-After', String(waitSec));
+        return res.status(429).json({ error: 'Rate limit exceeded' });
+      }
+      entry.tokens = (entry.tokens || 0) - 1;
+      rateLimitMap.set(key, entry);
+    }
+  } catch (e) {
+    // ignore rate limit errors
+  }
+
   // Check cache first
   const cached = searchCache.get(query);
   if (cached && cached.expiry > Date.now()) {
@@ -220,7 +349,7 @@ router.get('/search', async (req, res) => {
     const results = await executeSearch(query);
     const rankedResults = rankTracks(query, results, {
       limit: 20,
-      minDuration: 45,
+      minDuration: 30,
       maxDuration: 720,
       preferOriginals: true,
     });
@@ -232,6 +361,11 @@ router.get('/search', async (req, res) => {
     });
 
     console.log(`✓ Search completed for "${query}": ${rankedResults.length} results`);
+    if (!rankedResults || rankedResults.length === 0) {
+      console.error(`❌ Search returned no results for "${query}"`);
+      // If no backend providers available, prefer to return an error so frontend can show helpful UI
+      return res.status(502).json({ error: 'Search providers unavailable' });
+    }
     res.json(rankedResults);
   } catch (error) {
     console.error('❌ Search error:', error);
@@ -242,6 +376,63 @@ router.get('/search', async (req, res) => {
 let cachedTrending: any = null;
 let trendingExpiry = 0;
 const CACHE_TTL_TRENDING = 60 * 60 * 1000; // 1 hour
+
+const TRENDING_FALLBACK: MusicTrack[] = [
+  {
+    id: 'kPa7bsKwL-c',
+    videoId: 'kPa7bsKwL-c',
+    title: 'Blinding Lights',
+    artist: 'The Weeknd',
+    thumbnail: 'https://img.youtube.com/vi/kPa7bsKwL-c/0.jpg',
+    duration: 200,
+    url: 'https://www.youtube.com/watch?v=kPa7bsKwL-c',
+  },
+  {
+    id: 'JGwWNGJdvx8',
+    videoId: 'JGwWNGJdvx8',
+    title: 'Shape of You',
+    artist: 'Ed Sheeran',
+    thumbnail: 'https://img.youtube.com/vi/JGwWNGJdvx8/0.jpg',
+    duration: 234,
+    url: 'https://www.youtube.com/watch?v=JGwWNGJdvx8',
+  },
+  {
+    id: 'TUVcZfQe-Kw',
+    videoId: 'TUVcZfQe-Kw',
+    title: 'Levitating',
+    artist: 'Dua Lipa',
+    thumbnail: 'https://img.youtube.com/vi/TUVcZfQe-Kw/0.jpg',
+    duration: 203,
+    url: 'https://www.youtube.com/watch?v=TUVcZfQe-Kw',
+  },
+  {
+    id: 'fHI8X4OXluQ',
+    videoId: 'fHI8X4OXluQ',
+    title: 'As It Was',
+    artist: 'Harry Styles',
+    thumbnail: 'https://img.youtube.com/vi/fHI8X4OXluQ/0.jpg',
+    duration: 167,
+    url: 'https://www.youtube.com/watch?v=fHI8X4OXluQ',
+  },
+  {
+    id: 'oygrmJFKYZY',
+    videoId: 'oygrmJFKYZY',
+    title: 'Flowers',
+    artist: 'Miley Cyrus',
+    thumbnail: 'https://img.youtube.com/vi/oygrmJFKYZY/0.jpg',
+    duration: 200,
+    url: 'https://www.youtube.com/watch?v=oygrmJFKYZY',
+  },
+  {
+    id: 'H5v3kku4y6Q',
+    videoId: 'H5v3kku4y6Q',
+    title: 'Late Night Talking',
+    artist: 'Harry Styles',
+    thumbnail: 'https://img.youtube.com/vi/H5v3kku4y6Q/0.jpg',
+    duration: 178,
+    url: 'https://www.youtube.com/watch?v=H5v3kku4y6Q',
+  },
+];
 
 router.get('/trending', async (_req, res) => {
   if (cachedTrending && trendingExpiry > Date.now()) {
@@ -271,6 +462,13 @@ router.get('/trending', async (_req, res) => {
     if (ranked.length > 0) {
       cachedTrending = ranked;
       trendingExpiry = Date.now() + CACHE_TTL_TRENDING;
+    }
+
+    if (!ranked || ranked.length === 0) {
+      console.error('❌ Trending aggregation produced no tracks');
+      cachedTrending = TRENDING_FALLBACK;
+      trendingExpiry = Date.now() + 10 * 60 * 1000;
+      return res.json(TRENDING_FALLBACK);
     }
 
     res.json(ranked);
@@ -327,6 +525,11 @@ router.get('/stream/:id', async (req, res) => {
   const { id } = req.params;
   if (!id) {
     return res.status(400).json({ error: 'Track ID is required' });
+  }
+
+  // By default the backend should NOT proxy/stream audio. Only allow when explicitly enabled.
+  if (process.env.ENABLE_YTDLP !== 'true') {
+    return res.status(403).json({ error: 'Server-side streaming disabled. Enable ENABLE_YTDLP=true to allow fallback streaming.' });
   }
 
   const url = `https://www.youtube.com/watch?v=${id}`;

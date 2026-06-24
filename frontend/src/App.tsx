@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Layout } from './components/layout/Layout';
+import { Toasts } from './components/Toast';
+import { ClickToEnableOverlay } from './components/ClickToEnableOverlay';
 import { Auth } from './pages/Auth';
 import { Home } from './pages/Home';
 import { Search } from './pages/Search';
@@ -39,6 +41,8 @@ function App() {
   return (
     <BrowserRouter>
       <AnimatedRoutes />
+      <Toasts />
+      <ClickToEnableOverlay />
     </BrowserRouter>
   );
 }

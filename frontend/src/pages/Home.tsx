@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { API_URL } from '../config';
 import { motion } from 'framer-motion';
 import { TrendingUp, Clock, Zap, Sparkles, Music, Mic2, Globe, Guitar, Loader2 } from 'lucide-react';
@@ -10,6 +10,8 @@ import { HorizontalScroll } from '../components/HorizontalScroll';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { VibeSearch } from '../components/VibeSearch';
 import { isAiDisabled } from '../lib/gemini';
+
+const ASCIIText = lazy(() => import('../components/ASCIIText'));
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -89,10 +91,19 @@ export function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6 md:mb-8"
       >
-        <h1 className="text-2xl md:text-4xl font-extrabold text-text-primary tracking-tight flex items-center gap-3">
-          {getGreeting()} <Sparkles className="text-primary animate-pulse" size={28} />
-        </h1>
-        <p className="text-sm md:text-base text-text-secondary mt-1">Discover music that matches your mood</p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl md:text-4xl font-extrabold text-text-primary tracking-tight flex items-center gap-3">
+              {getGreeting()} <Sparkles className="text-[#D8B86A] animate-pulse" size={28} />
+            </h1>
+            <p className="text-sm md:text-base text-text-secondary mt-1">Discover music that matches your mood</p>
+          </div>
+          <div className="h-16 w-40 md:h-20 md:w-52 rounded-2xl overflow-hidden border border-[#D8B86A]/20 bg-[#080A0C]/80 shadow-[0_0_28px_rgba(216,184,106,0.12)]">
+            <Suspense fallback={<div className="h-full w-full bg-[#0B0E10]" />}>
+              <ASCIIText text="Sumic!" enableWaves asciiFontSize={7} textFontSize={150} planeBaseHeight={7} />
+            </Suspense>
+          </div>
+        </div>
       </motion.div>
 
       {/* AI Vibe Search (only if AI key available and not disabled) */}

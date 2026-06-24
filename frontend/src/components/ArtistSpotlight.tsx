@@ -123,7 +123,7 @@ export function ArtistSpotlight({ query, results }: ArtistSpotlightProps) {
               {artist.tracks.map((track, i) => (
                 <button
                   key={track.id + i}
-                  onClick={() => { playTrack(track); addRecent(track); }}
+                  onPointerDown={(e) => { e.preventDefault(); playTrack(track); addRecent(track); }}
                   className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition text-left group"
                 >
                   <span className="text-xs text-text-muted w-4 text-right">{i + 1}</span>

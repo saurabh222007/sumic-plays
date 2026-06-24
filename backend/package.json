@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "true",
+    "build": "node -e \"process.exit(0)\"",
     "start": "tsx src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,12 +17,13 @@
     "node": ">=18"
   },
   "dependencies": {
-    "axios": "^1.17.0",
+    "axios": "^1.18.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "tsx": "^4.22.4",
-    "youtube-dl-exec": "^3.1.7"
+    "youtube-dl-exec": "^3.1.7",
+    "ytsr": "^3.8.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

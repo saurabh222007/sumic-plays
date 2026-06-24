@@ -59,7 +59,7 @@ export function TrackCard({ track, index = 0, variant = 'card', showArtist = tru
         className={`flex items-center gap-3 p-2.5 rounded-xl group transition-colors cursor-pointer gpu-accelerated relative ${
           showPlaylistMenu ? 'z-30 bg-white/5 shadow-lg' : ''
         }`}
-        onClick={handlePlay}
+        onPointerDown={(e) => { e.preventDefault(); handlePlay(); }}
       >
         <div className={`relative w-11 h-11 shrink-0 rounded-lg overflow-hidden ${isCurrentlyPlaying && isPlaying ? 'animate-playing-pulse' : ''}`}>
           <img src={track.thumbnail} alt={displayTitle} className="w-full h-full object-cover" />
@@ -175,7 +175,7 @@ export function TrackCard({ track, index = 0, variant = 'card', showArtist = tru
         whileHover={{ scale: 1.02, y: -2 }}
         whileTap={{ scale: 0.97 }}
         className={`flex items-center gap-3 p-2 rounded-xl bg-surface/50 hover:bg-surface-hover group transition-all cursor-pointer min-w-[200px] gpu-accelerated ${isCurrentlyPlaying ? 'ring-1 ring-primary/40' : ''}`}
-        onClick={handlePlay}
+        onPointerDown={(e) => { e.preventDefault(); handlePlay(); }}
       >
         <div className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0 ${isCurrentlyPlaying && isPlaying ? 'animate-playing-pulse' : ''}`}>
           <img src={track.thumbnail} alt={displayTitle} className="w-full h-full object-cover" />
@@ -206,7 +206,7 @@ export function TrackCard({ track, index = 0, variant = 'card', showArtist = tru
       whileHover={{ y: -6, scale: 1.02 }}
       whileTap={{ scale: 0.96 }}
       className={`group cursor-pointer w-[160px] md:w-[180px] shrink-0 gpu-accelerated ${isCurrentlyPlaying ? 'ring-2 ring-primary/30 rounded-xl' : ''}`}
-      onClick={handlePlay}
+      onPointerDown={(e) => { e.preventDefault(); handlePlay(); }}
     >
       <div className={`relative aspect-square rounded-xl overflow-hidden mb-3 shadow-card ${isCurrentlyPlaying && isPlaying ? 'animate-playing-pulse' : ''}`}>
         <img
@@ -228,7 +228,7 @@ export function TrackCard({ track, index = 0, variant = 'card', showArtist = tru
           whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.85 }}
           className="absolute bottom-2 right-2 bg-primary rounded-full p-3 shadow-xl opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300"
-          onClick={(e) => { e.stopPropagation(); handlePlay(); }}
+          onPointerDown={(e) => { e.stopPropagation(); handlePlay(); }}
         >
           <Play size={16} className="text-black fill-current ml-0.5" />
         </motion.button>

@@ -18,10 +18,15 @@ const INVIDIOUS_INSTANCES = [
   'https://inv.nadeko.net',
 ];
 
+const PIPED_INSTANCES = [
+  'https://piped.video',
+  'https://piped.kavin.rocks',
+];
+
 // ── Provider detection ──────────────────────────────────────────────
 function detectProvider(url: string): 'spotify' | 'youtube' | null {
   if (/open\.spotify\.com\/playlist\//i.test(url)) return 'spotify';
-  if (/youtube\.com\/playlist|youtu\.be\/.*list=/i.test(url)) return 'youtube';
+  if (/(youtube\.com|music\.youtube\.com)\/(playlist|watch)|youtu\.be\/.*list=/i.test(url) && /[?&]list=/i.test(url)) return 'youtube';
   return null;
 }
 
@@ -35,6 +40,14 @@ function extractSpotifyPlaylistId(url: string): string | null {
 function extractYouTubePlaylistId(url: string): string | null {
   const match = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
   return match?.[1] ?? null;
+}
+
+function parseDuration(value: any): number {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return 0;
+  const parts = value.split(':').map(Number).reverse();
+  return parts.reduce((sum, part, index) => sum + (Number.isFinite(part) ? part * Math.pow(60, index) : 0), 0);
 }
 
 // ── Spotify: scrape track names from public embed page ──────────────
@@ -170,6 +183,32 @@ async function scrapeSpotifyPlaylist(playlistId: string): Promise<{ name: string
 
 // ── YouTube: extract track names via Invidious API ──────────────────
 async function scrapeYouTubePlaylist(playlistId: string): Promise<{ name: string; tracks: { title: string; artist: string; videoId: string }[] }> {
+  for (const instance of PIPED_INSTANCES) {
+    try {
+      const url = `${instance}/api/v1/playlists/${playlistId}`;
+      const { data } = await axios.get(url, { timeout: 8000 });
+      const rawVideos = data?.relatedStreams || data?.videos || [];
+      const tracks = rawVideos
+        .map((v: any) => {
+          const urlText = String(v.url || v.shortDescription || '');
+          const videoId = v.videoId || v.id || urlText.match(/(?:v=|watch\/|youtu\.be\/)([A-Za-z0-9_-]{11})/)?.[1] || '';
+          return {
+            title: v.title || v.name || 'Unknown',
+            artist: v.uploaderName || v.uploader || v.author || 'Unknown Artist',
+            videoId,
+          };
+        })
+        .filter((track: any) => track.videoId);
+
+      if (tracks.length > 0) {
+        console.log(`✓ YouTube playlist scraped via Piped ${instance}: ${tracks.length} tracks`);
+        return { name: data?.name || data?.title || 'Imported YouTube Playlist', tracks };
+      }
+    } catch (err) {
+      console.log(`⚠ Piped playlist ${instance} failed:`, (err as any)?.message);
+    }
+  }
+
   // Try Invidious instances first
   for (const instance of INVIDIOUS_INSTANCES) {
     try {
@@ -195,6 +234,10 @@ async function scrapeYouTubePlaylist(playlistId: string): Promise<{ name: string
 
   // Fallback: use yt-dlp to extract playlist
   try {
+    if (process.env.ENABLE_YTDLP !== 'true') {
+      console.log('⚠ yt-dlp disabled via ENABLE_YTDLP; skipping CLI fallback for playlist extraction');
+      throw new Error('yt-dlp disabled');
+    }
     console.log('🔄 Falling back to yt-dlp for YouTube playlist...');
     // Try programmatic API first
     try {
@@ -275,6 +318,42 @@ async function scrapeYouTubePlaylist(playlistId: string): Promise<{ name: string
 
 // ── Search for a single track using yt-dlp (reliable) with Invidious fast-path ──
 async function searchSingleTrack(query: string): Promise<MusicTrack | null> {
+  for (const instance of PIPED_INSTANCES) {
+    try {
+      const url = `${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`;
+      const { data } = await axios.get(url, { timeout: 3500 });
+      const items = Array.isArray(data) ? data : data?.items || [];
+      const mapped = items
+        .slice(0, 8)
+        .map((video: any) => {
+          const urlText = String(video.url || '');
+          const videoId = video.videoId || video.id || urlText.match(/(?:v=|watch\/|youtu\.be\/)([A-Za-z0-9_-]{11})/)?.[1] || '';
+          return {
+            id: videoId,
+            videoId,
+            title: video.title || video.name || 'Unknown Title',
+            artist: video.uploaderName || video.uploader || video.author || 'Unknown Artist',
+            thumbnail: video.thumbnail || `https://img.youtube.com/vi/${videoId}/0.jpg`,
+            duration: video.duration || parseDuration(video.durationText),
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+          };
+        })
+        .filter((video: any) => video.id);
+
+      if (mapped.length > 0) {
+        const ranked = rankTracks(query, mapped, {
+          limit: 1,
+          minDuration: 30,
+          maxDuration: 720,
+          preferOriginals: true,
+        });
+        return ranked[0] || mapped[0] || null;
+      }
+    } catch (err) {
+      console.log(`⚠ Piped search ${instance} failed for "${query}":`, (err as any)?.message);
+    }
+  }
+
   // Fast path: try ONE Invidious instance first (quick, but may fail)
   try {
     const instance = INVIDIOUS_INSTANCES[Math.floor(Math.random() * INVIDIOUS_INSTANCES.length)];
@@ -309,6 +388,40 @@ async function searchSingleTrack(query: string): Promise<MusicTrack | null> {
 
   // Reliable fallback: yt-dlp local search
   try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const ytsr = require('ytsr');
+    const result = await ytsr(query, { limit: 8 });
+    const mapped = (result?.items || [])
+      .filter((item: any) => item.type === 'video')
+      .map((video: any) => ({
+        id: video.id || '',
+        videoId: video.id || '',
+        title: video.title || 'Unknown Title',
+        artist: video.author?.name || video.uploader || 'Unknown Artist',
+        thumbnail: video.thumbnails?.[0]?.url || `https://img.youtube.com/vi/${video.id}/0.jpg`,
+        duration: parseDuration(video.duration),
+        url: video.url || `https://www.youtube.com/watch?v=${video.id}`,
+      }))
+      .filter((video: any) => video.id);
+
+    if (mapped.length > 0) {
+      const ranked = rankTracks(query, mapped, {
+        limit: 1,
+        minDuration: 30,
+        maxDuration: 720,
+        preferOriginals: true,
+      });
+      return ranked[0] || mapped[0] || null;
+    }
+  } catch (err) {
+    console.log(`⚠ ytsr search failed for "${query}":`, (err as any)?.message);
+  }
+
+  try {
+    if (process.env.ENABLE_YTDLP !== 'true') {
+      console.log('⚠ yt-dlp disabled via ENABLE_YTDLP; skipping CLI/programmatic fallback for single-track search');
+      return null;
+    }
     // Try programmatic API first
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -458,6 +571,7 @@ router.post('/import-playlist', async (req, res) => {
         if (yt.videoId) {
           matched.push({
             id: yt.videoId,
+            videoId: yt.videoId,
             title: yt.title,
             artist: yt.artist,
             thumbnail: `https://img.youtube.com/vi/${yt.videoId}/0.jpg`,

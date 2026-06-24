@@ -1,18 +1,12 @@
-import { useState, useRef } from 'react';
+import { Suspense, lazy, useState, useRef } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
-// ─── Animated heart SVG ───────────────────────────────────────────────────────
-function HeartIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor" aria-hidden="true">
-      <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/>
-    </svg>
-  );
-}
+const ASCIIText = lazy(() => import('../components/ASCIIText'));
 
+// ─── Animated heart SVG ───────────────────────────────────────────────────────
 function addRipple(e: React.MouseEvent<HTMLButtonElement>) {
   const btn = e.currentTarget;
   const circle = document.createElement('span');
@@ -125,25 +119,10 @@ export function Auth() {
             {...fadeUp(0.3)}
             className="flex flex-col items-center mb-9"
           >
-            {/* Pulsing heart */}
-            <div className="relative mb-5">
-              <div className="absolute inset-0 rounded-full bg-primary/30 blur-xl scale-150 animate-pulse-glow" />
-              <motion.div
-                className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-primary to-accent flex items-center justify-center text-white shadow-glow-primary"
-                style={{ filter: 'drop-shadow(0 0 16px rgba(139, 92, 246, 0.6))' }}
-                animate={{
-                  scale: [1, 1.14, 1.06, 1],
-                  filter: [
-                    'drop-shadow(0 0 10px rgba(139,92,246,0.5))',
-                    'drop-shadow(0 0 24px rgba(139,92,246,0.9))',
-                    'drop-shadow(0 0 16px rgba(139,92,246,0.7))',
-                    'drop-shadow(0 0 10px rgba(139,92,246,0.5))',
-                  ],
-                }}
-                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <HeartIcon />
-              </motion.div>
+            <div className="relative mb-5 h-20 w-44 rounded-2xl overflow-hidden border border-[#D8B86A]/20 bg-[#080A0C] shadow-[0_0_32px_rgba(216,184,106,0.16)]">
+              <Suspense fallback={<div className="h-full w-full bg-[#0B0E10]" />}>
+                <ASCIIText text="Sumic!" enableWaves asciiFontSize={8} textFontSize={160} planeBaseHeight={7} />
+              </Suspense>
             </div>
 
             <h1 className="text-4xl font-black tracking-widest text-text-primary uppercase">

@@ -30,11 +30,11 @@ export function ImportPlaylistModal({ isOpen, onClose, onPlaylistCreated }: Impo
   const [showMissing, setShowMissing] = useState(false);
   const [createdPlaylistId, setCreatedPlaylistId] = useState<string | null>(null);
 
-  const { createPlaylist, addTrackToPlaylist } = useLibraryStore();
+  const { createPlaylist } = useLibraryStore();
 
   const detectProviderLabel = (input: string): string | null => {
     if (/open\.spotify\.com\/playlist\//i.test(input)) return 'Spotify';
-    if (/youtube\.com\/playlist|youtu\.be\/.*list=/i.test(input)) return 'YouTube';
+    if (/(youtube\.com|music\.youtube\.com)\/(playlist|watch)|youtu\.be\/.*list=/i.test(input) && /[?&]list=/i.test(input)) return 'YouTube';
     return null;
   };
 
@@ -67,28 +67,9 @@ export function ImportPlaylistModal({ isOpen, onClose, onPlaylistCreated }: Impo
       const importResult = data as ImportResult;
       setResult(importResult);
 
-      // Create the playlist in the local store
-      createPlaylist(importResult.playlistName);
-
-      // Find the newly created playlist (it's the latest one)
-      // We need a small delay for Zustand to update
-      setTimeout(() => {
-        const updatedPlaylists = useLibraryStore.getState().playlists;
-        const newPlaylist = updatedPlaylists[updatedPlaylists.length - 1];
-
-        if (newPlaylist) {
-          setCreatedPlaylistId(newPlaylist.id);
-
-          // Add all matched tracks to the playlist
-          for (const track of importResult.matched) {
-            addTrackToPlaylist(newPlaylist.id, track);
-          }
-
-          setStep('success');
-        } else {
-          setStep('success');
-        }
-      }, 50);
+      const newPlaylistId = createPlaylist(importResult.playlistName, importResult.matched);
+      setCreatedPlaylistId(newPlaylistId);
+      setStep('success');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to import playlist. Please try again.');
       setStep('error');

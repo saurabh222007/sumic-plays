@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Mic2, Heart, Maximize2, Shuffle, Repeat, ListMusic, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayerStore } from '../../store/usePlayerStore';
@@ -11,75 +11,33 @@ export function BottomPlayer() {
     isPlaying,
     volume,
     progress,
-    streamUrl,
     isLoading,
     shuffle,
     repeat,
     queue,
     setPlaying,
-    setProgress,
     nextTrack,
     prevTrack,
     setVolume,
     setFullscreen,
     setShuffle,
     setRepeat,
-    setAudioElement,
     clearQueue,
   } = usePlayerStore();
 
   const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
   const { favorites, addFavorite, removeFavorite, playlists, addTrackToPlaylist, removeTrackFromPlaylist } = useLibraryStore();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { seek } = usePlayerStore();
 
   const isLiked = !!currentTrack && favorites.some((t) => t.id === currentTrack.id);
   const currentTitle = currentTrack ? getTrackTitle(currentTrack) : '';
 
-  // Sync audio element ref to store
   useEffect(() => {
-    if (audioRef.current) {
-      setAudioElement(audioRef.current);
-    }
-    return () => {
-      setAudioElement(null);
-    };
-  }, [setAudioElement]);
+    // progress updates and isPlaying are synchronized via playerEngine event subscriptions
+    // volume changes are applied via store.setVolume which calls playerEngine.setVolume
+  }, []);
 
-  useEffect(() => {
-    if (!audioRef.current) return;
-    if (isPlaying && streamUrl) {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .catch((e) => {
-            console.error('Playback failed:', e);
-            // Try to reload if it was a network error
-            if (e.name === 'NotSupportedError' || e.name === 'NotAllowedError') {
-              console.log('Trying to resume playback...');
-              setTimeout(() => {
-                audioRef.current?.play().catch(() => {});
-              }, 500);
-            }
-          });
-      }
-    } else {
-      audioRef.current.pause();
-    }
-  }, [isPlaying, streamUrl]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-
-  const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      setProgress(audioRef.current.currentTime);
-    }
-  };
-
-  const handleEnded = () => {
+  const handleNextClick = () => {
     void nextTrack();
   };
 
@@ -118,15 +76,17 @@ export function BottomPlayer() {
   };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (audioRef.current && currentTrack.duration) {
+    if (currentTrack?.duration) {
       const bounds = e.currentTarget.getBoundingClientRect();
-      const percent = (e.clientX - bounds.left) / bounds.width;
-      audioRef.current.currentTime = percent * currentTrack.duration;
-      setProgress(audioRef.current.currentTime);
+      const percent = Math.min(1, Math.max(0, (e.clientX - bounds.left) / bounds.width));
+      const t = percent * currentTrack.duration;
+      seek(t);
     }
   };
 
-  const progressPercent = currentTrack.duration ? (progress / currentTrack.duration) * 100 : 0;
+  const progressPercent = currentTrack.duration
+    ? Math.min(100, Math.max(0, (progress / currentTrack.duration) * 100))
+    : 0;
 
   return (
     <AnimatePresence>
@@ -135,41 +95,26 @@ export function BottomPlayer() {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        className="h-20 bg-[#0A0A0F]/90 backdrop-blur-xl border-t border-glass-border flex flex-col justify-between fixed bottom-[58px] md:bottom-0 left-0 right-0 z-40 select-none gpu-accelerated"
+        className="h-20 bg-[#080A0C]/95 backdrop-blur-xl border-t border-[#D8B86A]/20 shadow-[0_-18px_60px_rgba(0,0,0,0.45)] flex flex-col justify-between fixed bottom-[58px] md:bottom-0 left-0 right-0 z-40 select-none gpu-accelerated"
       >
         {/* Top Full Width Progress Bar */}
         <div
-          className="h-1 bg-surface-hover w-full relative group cursor-pointer"
+          className="h-1 bg-[#1B2024] w-full relative group cursor-pointer"
           onClick={handleProgressClick}
         >
           <motion.div
-            className="h-full bg-primary absolute left-0 top-0 group-hover:bg-primary-light"
+            className="h-full bg-gradient-to-r from-[#D8B86A] via-[#F2D98B] to-[#2ED3A2] absolute left-0 top-0"
             style={{ width: `${progressPercent}%` }}
             transition={{ duration: 0.1, ease: 'linear' }}
           />
           <motion.div
-            className="w-3 h-3 rounded-full bg-white absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
+            className="w-3 h-3 rounded-full bg-[#F8E7AE] shadow-[0_0_16px_rgba(216,184,106,0.65)] absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100"
             style={{ left: `calc(${progressPercent}% - 6px)` }}
             transition={{ duration: 0.15 }}
           />
         </div>
 
-        <audio
-          ref={audioRef}
-          src={streamUrl || undefined}
-          onTimeUpdate={handleTimeUpdate}
-          onEnded={handleEnded}
-          onError={(e) => {
-            console.error('Audio element error:', e.currentTarget.error?.message);
-          }}
-          onCanPlay={() => {
-            console.log('Audio can play');
-            if (isPlaying && audioRef.current) {
-              audioRef.current.play().catch((e) => console.error('Play after canplay failed:', e));
-            }
-          }}
-          controlsList="nodownload"
-        />
+        {/* Player handled by unified PlayerEngine; no inline audio/iframe elements here */}
 
         <div className="flex-1 flex items-center justify-between px-4">
           {/* Left: Track Info */}
@@ -178,7 +123,7 @@ export function BottomPlayer() {
             onClick={() => setFullscreen(true)}
             whileTap={{ scale: 0.97 }}
           >
-            <div className={`relative w-11 h-11 shrink-0 rounded-lg overflow-hidden shadow-md ${isPlaying ? 'animate-playing-pulse' : ''}`}>
+            <div className={`relative w-11 h-11 shrink-0 rounded-lg overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)] ring-1 ring-[#D8B86A]/25 ${isPlaying ? 'animate-playing-pulse' : ''}`}>
               <motion.img
                 layoutId="player-album-art"
                 src={currentTrack.thumbnail}
@@ -204,7 +149,7 @@ export function BottomPlayer() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
-                className="text-text-primary text-xs md:text-sm font-semibold truncate hover:text-primary transition-colors"
+                className="text-[#F6F1E7] text-xs md:text-sm font-semibold truncate hover:text-[#F2D98B] transition-colors"
               >
                 {currentTitle}
               </motion.span>
@@ -213,7 +158,7 @@ export function BottomPlayer() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.05 }}
-                className="text-text-secondary text-[10px] md:text-xs truncate"
+                className="text-[#9AA3A7] text-[10px] md:text-xs truncate"
               >
                 {currentTrack.artist}
               </motion.span>
@@ -228,7 +173,7 @@ export function BottomPlayer() {
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.85 }}
                 className={`transition cursor-pointer hidden md:block ${
-                  shuffle ? 'text-primary' : 'text-text-muted hover:text-text-secondary'
+                  shuffle ? 'text-[#D8B86A]' : 'text-[#758087] hover:text-[#D8DEE2]'
                 }`}
                 title="Shuffle"
               >
@@ -239,20 +184,20 @@ export function BottomPlayer() {
                 onClick={prevTrack}
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.8 }}
-                className="text-text-secondary hover:text-text-primary transition cursor-pointer"
+                className="text-[#A4ADB2] hover:text-[#F6F1E7] transition cursor-pointer"
               >
                 <SkipBack size={18} className="fill-current" />
               </motion.button>
 
               <motion.button
                 onClick={togglePlay}
-                disabled={isLoading || !streamUrl}
+                disabled={false}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.88 }}
-                className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center shadow-md disabled:opacity-75 cursor-pointer"
+                className="w-9 h-9 rounded-full bg-[#F2D98B] text-[#080A0C] flex items-center justify-center shadow-[0_0_24px_rgba(216,184,106,0.28)] hover:bg-[#FFE7A3] disabled:opacity-75 cursor-pointer"
               >
                 <AnimatePresence mode="wait">
-                  {isLoading ? (
+                  {(isLoading && !isPlaying) ? (
                     <motion.div
                       key="loader"
                       initial={{ opacity: 0, scale: 0.5 }}
@@ -286,10 +231,10 @@ export function BottomPlayer() {
               </motion.button>
 
               <motion.button
-                onClick={nextTrack}
+                onClick={handleNextClick}
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.8 }}
-                className="text-text-secondary hover:text-text-primary transition cursor-pointer"
+                className="text-[#A4ADB2] hover:text-[#F6F1E7] transition cursor-pointer"
               >
                 <SkipForward size={18} className="fill-current" />
               </motion.button>
@@ -299,7 +244,7 @@ export function BottomPlayer() {
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.85 }}
                 className={`transition cursor-pointer hidden md:block relative ${
-                  repeat !== 'off' ? 'text-primary' : 'text-text-muted hover:text-text-secondary'
+                  repeat !== 'off' ? 'text-[#D8B86A]' : 'text-[#758087] hover:text-[#D8DEE2]'
                 }`}
                 title={`Repeat: ${repeat}`}
               >
@@ -309,7 +254,7 @@ export function BottomPlayer() {
             </div>
 
             {/* Time indicator */}
-            <div className="flex items-center gap-2 text-[10px] text-text-secondary">
+            <div className="flex items-center gap-2 text-[10px] text-[#8D969B]">
               <span>{formatTime(progress)}</span>
               <span>/</span>
               <span>{formatTime(currentTrack.duration)}</span>
@@ -317,7 +262,7 @@ export function BottomPlayer() {
           </div>
 
           {/* Right: Extra Controls */}
-          <div className="flex items-center justify-end w-1/3 gap-3 md:gap-4 min-w-[120px] text-text-secondary">
+          <div className="flex items-center justify-end w-1/3 gap-3 md:gap-4 min-w-[120px] text-[#A4ADB2]">
           <motion.button
             onClick={clearQueue}
             whileHover={{ scale: 1.2 }}
@@ -332,10 +277,10 @@ export function BottomPlayer() {
             onClick={toggleLike}
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.8 }}
-            className="cursor-pointer p-1 text-text-secondary"
+            className="cursor-pointer p-1 text-[#A4ADB2]"
             title="Like song"
           >
-            <Heart size={18} className={isLiked ? 'fill-primary text-primary' : 'hover:text-text-primary'} />
+            <Heart size={18} className={isLiked ? 'fill-[#D8B86A] text-[#D8B86A]' : 'hover:text-[#F6F1E7]'} />
           </motion.button>
 
           <div className="relative shrink-0 flex items-center">
@@ -346,7 +291,7 @@ export function BottomPlayer() {
               }}
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.8 }}
-              className={`cursor-pointer p-1 transition-colors ${showPlaylistMenu ? 'text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`cursor-pointer p-1 transition-colors ${showPlaylistMenu ? 'text-[#D8B86A]' : 'text-[#A4ADB2] hover:text-[#F6F1E7]'}`}
               title="Add to Playlist"
             >
               <Plus size={18} />
@@ -361,7 +306,7 @@ export function BottomPlayer() {
                     setShowPlaylistMenu(false);
                   }}
                 />
-                <div className="absolute right-0 bottom-10 w-48 rounded-xl bg-[#0A0A0F]/95 backdrop-blur-xl border border-glass-border p-1.5 shadow-2xl z-50 animate-fade-in flex flex-col gap-0.5">
+                <div className="absolute right-0 bottom-10 w-48 rounded-xl bg-[#0B0E10]/98 backdrop-blur-xl border border-[#D8B86A]/20 p-1.5 shadow-2xl z-50 animate-fade-in flex flex-col gap-0.5">
                   <p className="text-[10px] font-bold text-text-muted px-2.5 py-1.5 uppercase tracking-wider select-none">Add to playlist</p>
                   {playlists.length === 0 ? (
                     <p className="text-xs text-text-secondary px-2.5 py-1.5 italic">No playlists found</p>
@@ -382,8 +327,8 @@ export function BottomPlayer() {
                           }}
                           className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-between ${
                             exists 
-                              ? 'text-primary bg-primary/10 hover:bg-primary/20' 
-                              : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                              ? 'text-[#F2D98B] bg-[#D8B86A]/10 hover:bg-[#D8B86A]/20' 
+                              : 'text-[#A4ADB2] hover:text-[#F6F1E7] hover:bg-white/5'
                           }`}
                         >
                           <span className="truncate">{playlist.name}</span>
@@ -401,7 +346,7 @@ export function BottomPlayer() {
               onClick={() => setFullscreen(true)}
               whileHover={{ scale: 1.15 }}
               whileTap={{ scale: 0.85 }}
-              className="hover:text-text-primary transition cursor-pointer hidden md:block"
+              className="hover:text-[#F6F1E7] transition cursor-pointer hidden md:block"
               title="Lyrics & Fullscreen"
             >
               <Mic2 size={18} />
@@ -417,7 +362,7 @@ export function BottomPlayer() {
                 step={0.01}
                 value={volume}
                 onChange={(e) => setVolume(parseFloat(e.target.value))}
-                className="w-full accent-primary bg-surface-hover h-1 rounded-full cursor-pointer"
+                className="w-full accent-[#D8B86A] bg-[#1B2024] h-1 rounded-full cursor-pointer"
               />
             </div>
           </div>

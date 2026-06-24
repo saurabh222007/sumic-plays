@@ -32,7 +32,7 @@ function cleanPlain(synced?: string) {
 }
 
 export function Lyrics() {
-  const { currentTrack, progress, audioElement } = usePlayerStore();
+  const { currentTrack, progress, seek } = usePlayerStore();
   const [syncedLines, setSyncedLines] = useState<LyricsLine[]>([]);
   const [plainText, setPlainText]     = useState('');
   const [loading, setLoading]         = useState(false);
@@ -47,16 +47,14 @@ export function Lyrics() {
     setNotFound(false);
     setActiveIdx(-1);
     if (!currentTrack) return;
-    let cancelled = false;
+    const controller = new AbortController();
     setLoading(true);
-
-    getLyrics(currentTrack.title, currentTrack.artist)
+    getLyrics(currentTrack.title, currentTrack.artist, controller.signal)
       .then((data) => {
-        if (cancelled) return;
+        if (!data) { setNotFound(true); return; }
         if (data?.syncedLyrics) {
           const parsed = parseSyncedLyrics(data.syncedLyrics);
           if (parsed.length > 0) { setSyncedLines(parsed); return; }
-          // fall through to plain
           const plain = cleanPlain(data.syncedLyrics);
           if (plain) { setPlainText(plain); return; }
         }
@@ -66,11 +64,11 @@ export function Lyrics() {
           setNotFound(true);
         }
       })
-      .catch(() => { if (!cancelled) setNotFound(true); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .catch((err) => { if ((err as any)?.name !== 'AbortError') setNotFound(true); })
+      .finally(() => { setLoading(false); });
 
-    return () => { cancelled = true; };
-  }, [currentTrack]);
+    return () => { controller.abort(); };
+  }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist]);
 
   // ── Karaoke sync ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -157,7 +155,7 @@ export function Lyrics() {
                     className={`text-sm font-semibold leading-relaxed cursor-pointer text-center origin-center select-none transition-colors ${
                       isActive ? 'text-white animate-lyric-glow' : 'text-white/40'
                     }`}
-                    onClick={() => { if (audioElement) audioElement.currentTime = line.time; }}
+                    onClick={() => { seek(line.time); }}
                   >
                     {line.text}
                   </motion.p>

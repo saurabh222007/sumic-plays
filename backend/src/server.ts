@@ -30,7 +30,13 @@ app.use('/api/music', musicRoutes);
 app.use('/api/music', importRoutes);
 app.use('/api/lyrics', lyricsRoutes);
 
+// Legacy health route
 app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// API health route (used by deployments)
+app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 

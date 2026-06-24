@@ -3,9 +3,9 @@ import { ChevronDown, Play, Pause, SkipBack, SkipForward, Volume2, Heart, Loader
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useLibraryStore } from '../../store/useLibraryStore';
-import { useVibeStore } from '../../store/useVibeStore';
 import { getLyrics, normalizeTitle, normalizeArtist } from '../../lib/lyrics';
 import { getTrackTitle } from '../../lib/musicDiscovery';
+import { DynamicMusicBackdrop } from '../DynamicMusicBackdrop';
 
 interface LyricsLine {
   text: string;
@@ -34,7 +34,6 @@ function parseSyncedLyrics(synced?: string): LyricsLine[] {
 export function FullscreenPlayer() {
   const {
     currentTrack,
-    streamUrl,
     isPlaying,
     isLoading,
     volume,
@@ -50,39 +49,19 @@ export function FullscreenPlayer() {
     setFullscreen,
     setShuffle,
     setRepeat,
-    audioElement,
+    // audioElement removed; use playerEngine via store methods
+    seek,
     clearQueue,
   } = usePlayerStore();
 
   const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
   const { favorites, addFavorite, removeFavorite, playlists, addTrackToPlaylist, removeTrackFromPlaylist } = useLibraryStore();
-  const { vibeColor } = useVibeStore();
   const [syncedLines, setSyncedLines] = useState<LyricsLine[]>([]);
   const [plainLyrics, setPlainLyrics] = useState('');
   const [lyricsLoading, setLyricsLoading] = useState(false);
   const [lyricsNotFound, setLyricsNotFound] = useState(false);
   const [currentLineIndex, setCurrentLineIndex] = useState(-1);
-  const [dominantColor, setDominantColor] = useState('#06060A');
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
-
-  // Extract dominant color from thumbnail
-  useEffect(() => {
-    if (!currentTrack?.thumbnail) return;
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.src = currentTrack.thumbnail;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1;
-      canvas.height = 1;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(img, 0, 0, 1, 1);
-        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-        setDominantColor(`rgb(${Math.floor(r * 0.7)}, ${Math.floor(g * 0.7)}, ${Math.floor(b * 0.7)})`);
-      }
-    };
-  }, [currentTrack?.thumbnail]);
 
   const isLiked = !!currentTrack && favorites.some((t) => t.id === currentTrack.id);
   const currentTitle = currentTrack ? getTrackTitle(currentTrack) : '';
@@ -102,27 +81,26 @@ export function FullscreenPlayer() {
     setLyricsNotFound(false);
     setCurrentLineIndex(-1);
     if (!currentTrack) return;
-    let cancelled = false;
-    setLyricsLoading(true);
+    const controller = new AbortController();
     const normTitle  = normalizeTitle(getTrackTitle(currentTrack));
     const normArtist = normalizeArtist(currentTrack.artist);
-    getLyrics(normTitle, normArtist)
+    setLyricsLoading(true);
+    getLyrics(normTitle, normArtist, controller.signal)
       .then((data) => {
-        if (cancelled) return;
+        if (!data) { setLyricsNotFound(true); return; }
         if (data?.syncedLyrics) {
           const parsed = parseSyncedLyrics(data.syncedLyrics);
           if (parsed.length > 0) { setSyncedLines(parsed); return; }
-          // fallback: strip timestamps and show as plain
           const plain = data.syncedLyrics.replace(/\[\d{1,2}:\d{2}(?:\.\d{1,3})?\]/g, '').trim();
           if (plain) { setPlainLyrics(plain); return; }
         }
         if (data?.plainLyrics) { setPlainLyrics(data.plainLyrics); }
         else { setLyricsNotFound(true); }
       })
-      .catch(() => { if (!cancelled) setLyricsNotFound(true); })
-      .finally(() => { if (!cancelled) setLyricsLoading(false); });
-    return () => { cancelled = true; };
-  }, [currentTrack]);
+      .catch((err) => { if ((err as any)?.name !== 'AbortError') setLyricsNotFound(true); })
+      .finally(() => { setLyricsLoading(false); });
+    return () => { controller.abort(); };
+  }, [currentTrack?.id, currentTrack?.title, currentTrack?.artist]);
 
   // Sync lyrics scroll
   useEffect(() => {
@@ -146,7 +124,7 @@ export function FullscreenPlayer() {
   if (!isFullscreen || !currentTrack) return null;
 
   const togglePlay = () => {
-    if (!currentTrack || !streamUrl) return;
+    if (!currentTrack) return;
     setPlaying(!isPlaying);
   };
 
@@ -182,14 +160,17 @@ export function FullscreenPlayer() {
   };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (audioElement && currentTrack.duration) {
+    if (currentTrack?.duration) {
       const bounds = e.currentTarget.getBoundingClientRect();
-      const percent = (e.clientX - bounds.left) / bounds.width;
-      audioElement.currentTime = percent * currentTrack.duration;
+      const percent = Math.min(1, Math.max(0, (e.clientX - bounds.left) / bounds.width));
+      const t = percent * currentTrack.duration;
+      seek(t);
     }
   };
 
-  const progressPercent = currentTrack.duration ? (progress / currentTrack.duration) * 100 : 0;
+  const progressPercent = currentTrack.duration
+    ? Math.min(100, Math.max(0, (progress / currentTrack.duration) * 100))
+    : 0;
 
   return (
     <AnimatePresence>
@@ -198,14 +179,11 @@ export function FullscreenPlayer() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: '100%' }}
         transition={{ type: 'spring', damping: 30, stiffness: 200, mass: 0.8 }}
-        className="fixed inset-0 z-50 bg-[#06060A] text-white flex flex-col overflow-hidden gpu-accelerated"
+        className="fixed inset-0 z-50 bg-[#050607] text-white flex flex-col overflow-hidden gpu-accelerated"
       >
-        {/* Dynamic Matching Color Backdrop */}
-        <motion.div
-          className="absolute inset-0 pointer-events-none"
-          animate={{ background: `linear-gradient(to bottom, ${dominantColor}, #06060A)` }}
-          transition={{ duration: 1.5, ease: 'easeInOut' }}
-        />
+        <DynamicMusicBackdrop track={currentTrack} intensity="full" />
+        <div className="absolute inset-x-6 top-20 h-px bg-gradient-to-r from-transparent via-[#D8B86A]/35 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-6 bottom-20 h-px bg-gradient-to-r from-transparent via-[#2ED3A2]/20 to-transparent pointer-events-none" />
 
         {/* Top Header */}
         <motion.header
@@ -218,7 +196,7 @@ export function FullscreenPlayer() {
             onClick={() => setFullscreen(false)}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.85 }}
-            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition border border-white/5"
+            className="w-10 h-10 rounded-full bg-white/6 hover:bg-[#D8B86A]/12 flex items-center justify-center transition border border-[#D8B86A]/20 text-[#F6F1E7]"
             aria-label="Minimize"
           >
             <ChevronDown size={24} />
@@ -235,7 +213,11 @@ export function FullscreenPlayer() {
         </motion.header>
 
         {/* Main Layout */}
-        <div className="relative flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-center px-6 md:px-16 pb-20 md:pb-12 overflow-y-auto md:overflow-hidden z-10 max-w-6xl mx-auto w-full scrollbar-hide">
+        <div className="relative flex-1 grid grid-cols-1 md:grid-cols-[minmax(300px,440px)_minmax(0,1fr)] gap-6 md:gap-12 items-stretch px-6 md:px-16 pb-24 md:pb-10 overflow-y-auto md:overflow-hidden z-10 max-w-6xl mx-auto w-full scrollbar-hide min-h-0">
+          <div className="hidden md:block absolute left-10 top-8 h-16 w-16 border-l border-t border-[#D8B86A]/35 pointer-events-none" />
+          <div className="hidden md:block absolute right-10 top-8 h-16 w-16 border-r border-t border-[#D8B86A]/20 pointer-events-none" />
+          <div className="hidden md:block absolute left-10 bottom-8 h-16 w-16 border-l border-b border-[#2ED3A2]/20 pointer-events-none" />
+          <div className="hidden md:block absolute right-10 bottom-8 h-16 w-16 border-r border-b border-[#D8B86A]/25 pointer-events-none" />
           {/* Left Panel: Cover Art & Controls */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -247,18 +229,17 @@ export function FullscreenPlayer() {
             <div className="relative">
               {/* Glow behind the art */}
               <motion.div
-                className="absolute inset-0 rounded-3xl opacity-40 blur-[40px] -z-10 scale-110"
+                className="absolute inset-0 rounded-3xl opacity-40 blur-[40px] -z-10 scale-110 bg-[#D8B86A]"
                 animate={{
                   boxShadow: isPlaying
-                    ? [`0 0 60px 10px ${dominantColor}`, `0 0 80px 20px ${dominantColor}`, `0 0 60px 10px ${dominantColor}`]
-                    : `0 0 30px 5px ${dominantColor}`,
+                    ? ['0 0 60px 10px rgba(216,184,106,0.25)', '0 0 80px 20px rgba(46,211,162,0.18)', '0 0 60px 10px rgba(216,184,106,0.25)']
+                    : '0 0 30px 5px rgba(216,184,106,0.14)',
                 }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                style={{ background: dominantColor }}
               />
 
               <motion.div
-                className={`w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-3xl overflow-hidden shadow-elevated border border-white/10 ${isPlaying ? 'animate-playing-pulse' : ''}`}
+                className={`w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-3xl overflow-hidden shadow-[0_28px_80px_rgba(0,0,0,0.55)] border border-[#D8B86A]/20 ${isPlaying ? 'animate-playing-pulse' : ''}`}
               >
                 <motion.img
                   layoutId="player-album-art"
@@ -299,9 +280,11 @@ export function FullscreenPlayer() {
                 onClick={toggleLike}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.8 }}
-                className="shrink-0 w-11 h-11 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/5"
+                className="shrink-0 w-11 h-11 rounded-xl bg-white/5 hover:bg-[#D8B86A]/10 flex items-center justify-center border border-[#D8B86A]/15"
               >
-                <Heart size={20} className={isLiked ? 'fill-primary text-primary' : 'text-white/70'} />
+                <motion.span animate={isLiked ? { scale: [1, 1.18, 1] } : { scale: 1 }} transition={{ duration: 0.35 }}>
+                  <Heart size={20} className={isLiked ? 'fill-[#D8B86A] text-[#D8B86A]' : 'text-white/70'} />
+                </motion.span>
               </motion.button>
 
               <div className="relative shrink-0 flex items-center">
@@ -309,7 +292,7 @@ export function FullscreenPlayer() {
                   onClick={() => setShowPlaylistMenu(!showPlaylistMenu)}
                   whileHover={{ scale: 1.2 }}
                   whileTap={{ scale: 0.8 }}
-                  className={`shrink-0 w-11 h-11 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/5 transition-colors ${showPlaylistMenu ? 'text-primary' : 'text-white/70 hover:text-white'}`}
+                  className={`shrink-0 w-11 h-11 rounded-xl bg-white/5 hover:bg-[#D8B86A]/10 flex items-center justify-center border border-[#D8B86A]/15 transition-colors ${showPlaylistMenu ? 'text-[#D8B86A]' : 'text-white/70 hover:text-white'}`}
                   title="Add to Playlist"
                 >
                   <Plus size={20} />
@@ -321,7 +304,7 @@ export function FullscreenPlayer() {
                       className="fixed inset-0 z-40 cursor-default" 
                       onClick={() => setShowPlaylistMenu(false)}
                     />
-                    <div className="absolute right-0 bottom-14 w-48 rounded-xl bg-[#0A0A0F]/95 backdrop-blur-xl border border-glass-border p-1.5 shadow-2xl z-50 animate-fade-in flex flex-col gap-0.5 text-left">
+                    <div className="absolute right-0 bottom-14 w-48 rounded-xl bg-[#0B0E10]/98 backdrop-blur-xl border border-[#D8B86A]/20 p-1.5 shadow-2xl z-50 animate-fade-in flex flex-col gap-0.5 text-left">
                       <p className="text-[10px] font-bold text-text-muted px-2.5 py-1.5 uppercase tracking-wider select-none">Add to playlist</p>
                       {playlists.length === 0 ? (
                         <p className="text-xs text-text-secondary px-2.5 py-1.5 italic">No playlists found</p>
@@ -342,12 +325,12 @@ export function FullscreenPlayer() {
                               }}
                               className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-between ${
                                 exists 
-                                  ? 'text-primary bg-primary/10 hover:bg-primary/20' 
-                                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                                  ? 'text-[#F2D98B] bg-[#D8B86A]/10 hover:bg-[#D8B86A]/20' 
+                                  : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
                               }`}
                             >
                               <span className="truncate text-white">{playlist.name}</span>
-                              {exists && <span className="text-[9px] uppercase tracking-wider font-bold text-primary">Added</span>}
+                              {exists && <span className="text-[9px] uppercase tracking-wider font-bold text-[#F2D98B]">Added</span>}
                             </button>
                           );
                         })
@@ -366,16 +349,16 @@ export function FullscreenPlayer() {
               className="w-full mt-6"
             >
               <div
-                className="h-1.5 bg-white/10 rounded-full w-full relative group cursor-pointer"
+                className="h-1.5 bg-[#1B2024] rounded-full w-full relative group cursor-pointer"
                 onClick={handleProgressClick}
               >
                 <motion.div
-                  className="h-full rounded-full absolute left-0 top-0"
-                  style={{ width: `${progressPercent}%`, backgroundColor: vibeColor }}
+                  className="h-full rounded-full absolute left-0 top-0 bg-gradient-to-r from-[#D8B86A] via-[#F2D98B] to-[#2ED3A2]"
+                  style={{ width: `${progressPercent}%` }}
                   transition={{ duration: 0.1, ease: 'linear' }}
                 />
                 <motion.div
-                  className="w-4 h-4 rounded-full bg-white absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 shadow-lg"
+                  className="w-4 h-4 rounded-full bg-[#F8E7AE] absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 shadow-[0_0_18px_rgba(216,184,106,0.7)]"
                   style={{ left: `calc(${progressPercent}% - 8px)` }}
                   transition={{ duration: 0.15 }}
                 />
@@ -397,9 +380,11 @@ export function FullscreenPlayer() {
                 onClick={toggleShuffle}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.8 }}
-                className={`transition-all ${shuffle ? 'text-primary' : 'text-white/40 hover:text-white'}`}
+                className={`transition-all ${shuffle ? 'text-[#D8B86A]' : 'text-white/40 hover:text-white'}`}
               >
-                <Shuffle size={20} />
+                <motion.span animate={shuffle ? { rotate: [0, -12, 12, 0] } : { rotate: 0 }} transition={{ duration: 0.45 }}>
+                  <Shuffle size={20} />
+                </motion.span>
               </motion.button>
 
               <motion.button
@@ -423,13 +408,13 @@ export function FullscreenPlayer() {
 
               <motion.button
                 onClick={togglePlay}
-                disabled={isLoading || !streamUrl}
+                disabled={false}
                 whileHover={{ scale: 1.08 }}
                 whileTap={{ scale: 0.88 }}
-                className="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center shadow-xl disabled:opacity-60 shrink-0"
+                className="w-16 h-16 rounded-full bg-[#F2D98B] text-[#050607] flex items-center justify-center shadow-[0_0_36px_rgba(216,184,106,0.35)] hover:bg-[#FFE7A3] disabled:opacity-60 shrink-0"
               >
                 <AnimatePresence mode="wait">
-                  {isLoading ? (
+                  {(isLoading && !isPlaying) ? (
                     <motion.div key="load" initial={{ opacity: 0, rotate: -90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                       <Loader2 size={28} className="animate-spin text-black" />
                     </motion.div>
@@ -458,9 +443,11 @@ export function FullscreenPlayer() {
                 onClick={cycleRepeat}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.8 }}
-                className={`transition-all relative ${repeat !== 'off' ? 'text-primary' : 'text-white/40 hover:text-white'}`}
+                className={`transition-all relative ${repeat !== 'off' ? 'text-[#D8B86A]' : 'text-white/40 hover:text-white'}`}
               >
-                <Repeat size={20} />
+                <motion.span animate={repeat !== 'off' ? { rotate: 360 } : { rotate: 0 }} transition={{ duration: 0.5 }}>
+                  <Repeat size={20} />
+                </motion.span>
                 {repeat === 'one' && <span className="absolute text-[8px] font-bold -top-1.5 -right-1.5">1</span>}
               </motion.button>
             </motion.div>
@@ -475,7 +462,7 @@ export function FullscreenPlayer() {
                 step={0.01}
                 value={volume}
                 onChange={(e) => setVolume(parseFloat(e.target.value))}
-                className="flex-1 accent-primary cursor-pointer h-1 rounded-full bg-white/15"
+                className="flex-1 accent-[#D8B86A] cursor-pointer h-1 rounded-full bg-[#1B2024]"
               />
             </div>
           </motion.div>
@@ -485,17 +472,17 @@ export function FullscreenPlayer() {
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.25, duration: 0.5 }}
-            className="w-full h-full flex flex-col justify-start overflow-hidden py-4 md:pl-8"
+            className="w-full h-full min-h-[420px] md:min-h-0 flex flex-col overflow-hidden py-4 md:pl-8"
           >
             <div
               ref={lyricsContainerRef}
-              className="flex-1 overflow-y-auto scrollbar-hide select-none max-h-[60vh] md:max-h-[68vh] flex flex-col items-center gap-8 scroll-smooth"
+              className="flex-1 min-h-0 overflow-y-auto scrollbar-hide select-none flex flex-col items-center gap-8 scroll-smooth rounded-2xl border border-[#D8B86A]/10 bg-black/10 px-4 md:px-8 pb-28"
               style={{
-                maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
+                maskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)',
               }}
             >
-              <div className="h-[40vh] shrink-0 w-full" />
+              <div className="h-[28vh] shrink-0 w-full" />
 
               {lyricsLoading ? (
                 <div className="h-full flex flex-col items-center justify-center gap-3 text-white/50 py-12">
@@ -521,9 +508,9 @@ export function FullscreenPlayer() {
                         filter: isActive ? 'blur(0px)' : 'blur(0.5px)',
                       }}
                       transition={{ duration: 0.4, ease: 'easeOut' }}
-                      className="text-2xl md:text-3xl lg:text-4xl font-extrabold leading-tight text-center cursor-pointer origin-center max-w-xl text-white"
+                      className="text-xl md:text-3xl lg:text-4xl font-extrabold leading-snug text-center cursor-pointer origin-center max-w-2xl text-white break-words"
                       onClick={() => {
-                        if (audioElement) audioElement.currentTime = line.time;
+                        seek(line.time);
                       }}
                     >
                       {line.text}
@@ -531,12 +518,12 @@ export function FullscreenPlayer() {
                   );
                 })
               ) : (
-                <pre className="whitespace-pre-wrap font-sans text-xl md:text-2xl font-extrabold text-white/50 leading-loose text-center max-w-xl">
+                <pre className="whitespace-pre-wrap font-sans text-lg md:text-2xl font-extrabold text-white/55 leading-loose text-center max-w-2xl break-words">
                   {plainLyrics}
                 </pre>
               )}
 
-              <div className="h-[70vh] shrink-0 w-full" />
+              <div className="h-[45vh] shrink-0 w-full" />
             </div>
           </motion.div>
         </div>

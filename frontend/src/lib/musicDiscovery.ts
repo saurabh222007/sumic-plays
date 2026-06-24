@@ -17,7 +17,9 @@ const MODIFIED_TOKENS = [
   'reverb',
   'nightcore',
   'bass boosted',
+  'bassboosted',
   '8d audio',
+  '8d',
   '1 hour',
   'one hour',
   'loop',
@@ -25,9 +27,15 @@ const MODIFIED_TOKENS = [
   'ultra bass',
   'sped up',
   'pitch shifted',
+  'tiktok edit',
+  'tik tok edit',
+  'edit',
+  'mashup',
+  'fan made',
+  'fanmade',
 ];
 
-const LYRICS_TOKENS = ['lyrics', 'lyric video', 'with lyrics'];
+const LYRICS_TOKENS = ['lyrics', 'lyric video', 'lyrical', 'lyrical video', 'with lyrics'];
 const ALTERNATIVE_TOKENS = ['acoustic', 'live', 'cover', 'remix', 'remastered', 'instrumental', 'karaoke'];
 const OFFICIAL_TOKENS = ['official audio', 'official video', 'official music video', 'artist upload', 'verified artist'];
 const TOPIC_TOKENS = ['topic', 'auto-generated'];
@@ -148,24 +156,29 @@ function scoreTrack(query: string, track: Track): number {
     if (artistText.includes(token)) score += 8;
   }
 
-  if (version === 'official') score += 55;
-  else if (version === 'topic') score += 40;
-  else if (version === 'lyrics') score -= 35;
-  else if (version === 'alternative') score -= 18;
-  else if (version === 'modified') score -= 90;
+  if (version === 'official') score += 110;
+  else if (version === 'topic') score += 90;
+  else if (version === 'lyrics') score -= 105;
+  else if (version === 'alternative') score -= 85;
+  else if (version === 'modified') score -= 150;
 
-  if (isOfficialUpload(track)) score += 20;
+  if (isOfficialUpload(track)) score += 55;
+  if (/vevo/i.test(track.artist)) score += 80;
+  if (/official/i.test(track.artist)) score += 65;
+  if (/topic|auto-generated/i.test(track.artist)) score += 70;
+  if (/records|music|entertainment|films|soundtrack|t series|sony|zee music|saregama|warner|universal/i.test(track.artist)) score += 24;
+  if (track.viewCount) score += Math.min(95, Math.log10(track.viewCount + 1) * 13);
+  if (track.likeCount) score += Math.min(35, Math.log10(track.likeCount + 1) * 7);
   if (duration >= 150 && duration <= 330) score += 30;
   else if (duration >= 120 && duration <= 420) score += 20;
   else if (duration > 720) score -= 80;
   else if (duration > 600) score -= 35;
   else if (duration < 60) score -= 45;
 
-  if (/topic|auto-generated/i.test(track.artist)) score += 10;
-  if (/verified/i.test(track.artist)) score += 18;
+  if (/verified/i.test(track.artist)) score += 35;
   if (track.title.length > 90) score -= 18;
-  if (hasAnyToken(track.title, MODIFIED_TOKENS) && !normalizedQuery.includes('slowed') && !normalizedQuery.includes('reverb') && !normalizedQuery.includes('remix')) score -= 45;
-  if (hasAnyToken(track.title, LYRICS_TOKENS) && !normalizedQuery.includes('lyrics')) score -= 25;
+  if (hasAnyToken(track.title, MODIFIED_TOKENS) && !normalizedQuery.includes('slowed') && !normalizedQuery.includes('reverb') && !normalizedQuery.includes('remix')) score -= 95;
+  if (hasAnyToken(track.title, LYRICS_TOKENS) && !normalizedQuery.includes('lyrics')) score -= 80;
 
   const cleanArtist = track.artist.toLowerCase().replace(/vevo/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
   if (cleanArtist.length >= 3 && normalizeText(track.title).includes(cleanArtist)) {
