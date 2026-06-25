@@ -44,26 +44,50 @@ class CanvasText {
   font: string;
   private text: string;
   private options: { fontSize: number; fontFamily: string; color: string };
+  private _texture: THREE.CanvasTexture | null = null;
 
   constructor(text: string, options: { fontSize: number; fontFamily: string; color: string }) {
     this.text = text;
     this.options = options;
     this.font = `600 ${this.options.fontSize}px ${this.options.fontFamily}`;
+    // Always create square canvas so the geometry fits squarely in containers
+    this.canvas.width = 512;
+    this.canvas.height = 512;
+  }
+
+  get texture(): THREE.CanvasTexture | null {
+    return this._texture;
+  }
+
+  setTexture(tex: THREE.CanvasTexture) {
+    this._texture = tex;
   }
 
   resize() {
-    this.context.font = this.font;
-    const metrics = this.context.measureText(this.text);
-    this.canvas.width = Math.ceil(metrics.width) + 20;
-    this.canvas.height = Math.ceil(metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) + 20;
+    // Fixed square canvas — no-op since we always use 512x512
   }
 
   render() {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.clearRect(0, 0, 512, 512);
     this.context.fillStyle = this.options.color;
     this.context.font = this.font;
+
+    const textMetrics = this.context.measureText(this.text);
+    // Scale font to fit nicely within the square (80% of canvas)
+    const targetWidth = 512 * 0.8;
+    let fontSize = this.options.fontSize;
+    if (textMetrics.width > targetWidth) {
+      fontSize = Math.floor(fontSize * (targetWidth / textMetrics.width));
+      this.context.font = `600 ${fontSize}px ${this.options.fontFamily}`;
+    }
     const metrics = this.context.measureText(this.text);
-    this.context.fillText(this.text, 10, 10 + metrics.actualBoundingBoxAscent);
+    const x = (512 - metrics.width) / 2;
+    const y = 512 / 2 + metrics.actualBoundingBoxAscent / 2;
+    this.context.fillText(this.text, x, y);
+
+    if (this._texture) {
+      this._texture.needsUpdate = true;
+    }
   }
 }
 
@@ -85,9 +109,12 @@ class AsciiTextScene {
     this.container = container;
     this.options = options;
     const { width, height } = container.getBoundingClientRect();
-    this.camera = new THREE.PerspectiveCamera(45, width / Math.max(height, 1), 1, 1000);
-    this.camera.position.z = 30;
-    this.mouse = { x: width / 2, y: height / 2 };
+    const safeW = Math.max(width, 1);
+    const safeH = Math.max(height, 1);
+    this.camera = new THREE.PerspectiveCamera(45, safeW / safeH, 1, 1000);
+    // Move camera closer so geometry fills the container better
+    this.camera.position.z = 22;
+    this.mouse = { x: safeW / 2, y: safeH / 2 };
   }
 
   async init() {
@@ -103,13 +130,18 @@ class AsciiTextScene {
       fontFamily: 'IBM Plex Mono, Courier New, monospace',
       color: this.options.textColor,
     });
-    this.canvasText.resize();
+
+    // Create texture from the square canvas
+    this.texture = new THREE.CanvasTexture(this.canvasText.canvas);
+    this.texture.minFilter = THREE.LinearFilter;
+    this.texture.magFilter = THREE.LinearFilter;
+    this.canvasText.setTexture(this.texture);
     this.canvasText.render();
 
-    this.texture = new THREE.CanvasTexture(this.canvasText.canvas);
-    this.texture.minFilter = THREE.NearestFilter;
-    const aspect = this.canvasText.canvas.width / Math.max(this.canvasText.canvas.height, 1);
-    this.geometry = new THREE.PlaneGeometry(this.options.planeBaseHeight * aspect, this.options.planeBaseHeight, 36, 36);
+    // Use square plane geometry so the mesh is always square
+    // Derived from the container size — we want the geometry to fill the view
+    const size = this.options.planeBaseHeight;
+    this.geometry = new THREE.PlaneGeometry(size, size, 36, 36);
     this.material = new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader,
@@ -137,9 +169,11 @@ class AsciiTextScene {
   resize = () => {
     if (!this.renderer) return;
     const { width, height } = this.container.getBoundingClientRect();
-    this.camera.aspect = width / Math.max(height, 1);
+    const safeW = Math.max(width, 1);
+    const safeH = Math.max(height, 1);
+    this.camera.aspect = safeW / safeH;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(safeW, safeH);
   };
 
   private onPointerMove = (evt: MouseEvent | TouchEvent) => {
@@ -154,11 +188,15 @@ class AsciiTextScene {
     if (!this.renderer || !this.material || !this.mesh || !this.canvasText || !this.texture) return;
     const { width, height } = this.container.getBoundingClientRect();
     const time = Date.now() * 0.001;
-    this.canvasText.render();
-    this.texture.needsUpdate = true;
+    // Re-render canvas text each frame for the chroma-aberration-style fragment effect
+    // The canvas itself doesn't change each frame, so we just update the uniform
     this.material.uniforms.uTime.value = Math.sin(time);
-    this.mesh.rotation.x += (mapRange(this.mouse.y, 0, Math.max(height, 1), 0.5, -0.5) - this.mesh.rotation.x) * 0.05;
-    this.mesh.rotation.y += (mapRange(this.mouse.x, 0, Math.max(width, 1), -0.5, 0.5) - this.mesh.rotation.y) * 0.05;
+    this.mesh.rotation.x += (
+      mapRange(this.mouse.y, 0, Math.max(height, 1), 0.5, -0.5) - this.mesh.rotation.x
+    ) * 0.05;
+    this.mesh.rotation.y += (
+      mapRange(this.mouse.x, 0, Math.max(width, 1), -0.5, 0.5) - this.mesh.rotation.y
+    ) * 0.05;
     this.renderer.render(this.scene, this.camera);
   };
 
@@ -229,7 +267,7 @@ export default function ASCIIText({
   return (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden ${className}`}
+      className={`relative overflow-hidden flex items-center justify-center ${className}`}
       style={{ fontSize: asciiFontSize }}
       aria-label={text}
     />

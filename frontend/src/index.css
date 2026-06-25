@@ -186,6 +186,27 @@ body {
   animation-play-state: paused;
 }
 
+/* Fullscreen player premium disc spin (slower, smooth steering feel) */
+@keyframes steering-disc {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-steering-disc {
+  animation: steering-disc 8s linear infinite;
+  will-change: transform;
+}
+
+/* Fade-in utility (used by playlist popover) */
+@keyframes fade-in {
+  from { opacity: 0; transform: scale(0.95) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.18s ease-out forwards;
+}
+
 /* Pulsing glow ring around playing thumbnail */
 @keyframes playing-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }

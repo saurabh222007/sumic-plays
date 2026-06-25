@@ -1,9 +1,11 @@
 (async function(){
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  
   const urls = [
-    {name:'beatles', url:'http://localhost:5000/api/music/search?q=beatles'},
-    {name:'arijit', url:'http://localhost:5000/api/music/search?q=arijit%20singh'},
-    {name:'sita', url:'http://localhost:5000/api/music/search?q=sita%20ram'},
-    {name:'trending', url:'http://localhost:5000/api/music/trending'},
+    {name:'beatles', url:`${API_URL}/api/music/search?q=beatles`},
+    {name:'arijit', url:`${API_URL}/api/music/search?q=arijit%20singh`},
+    {name:'sita', url:`${API_URL}/api/music/search?q=sita%20ram`},
+    {name:'trending', url:`${API_URL}/api/music/trending`},
   ];
 
   for(const u of urls){
