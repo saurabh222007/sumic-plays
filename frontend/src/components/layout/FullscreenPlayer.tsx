@@ -9,6 +9,12 @@ import { useLibraryStore } from '../../store/useLibraryStore';
 import { getLyrics, normalizeTitle, normalizeArtist } from '../../lib/lyrics';
 import { getTrackTitle } from '../../lib/musicDiscovery';
 import { DynamicMusicBackdrop } from '../DynamicMusicBackdrop';
+import { ProgressBarRaf } from './ProgressBarRaf';
+
+
+// NOTE: timing debug / RAF meter are reserved for upcoming performance instrumentation.
+// Kept non-invasive to avoid changing playback stability.
+
 
 /* ─── Types ─────────────────────────────────────────────── */
 interface LyricsLine { text: string; time: number }
@@ -30,12 +36,7 @@ function parseSyncedLyrics(synced?: string): LyricsLine[] {
   return lines.sort((a, b) => a.time - b.time);
 }
 
-const formatTime = (t: number) => {
-  if (isNaN(t)) return '0:00';
-  const m = Math.floor(t / 60);
-  const s = Math.floor(t % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-};
+
 
 /* ─── Sub-components ─────────────────────────────────────── */
 
@@ -54,33 +55,8 @@ const AlbumArt = memo(function AlbumArt({ thumbnail, title }: { thumbnail: strin
   );
 });
 
-const ProgressBar = memo(function ProgressBar({
-  progress, duration, onSeek,
-}: {
-  progress: number; duration: number; onSeek: (t: number) => void;
-}) {
-  const barRef = useRef<HTMLDivElement>(null);
-  const percent = duration ? Math.min(100, Math.max(0, (progress / duration) * 100)) : 0;
-  const handleClick = (e: React.MouseEvent) => {
-    if (!barRef.current || !duration) return;
-    const rect = barRef.current.getBoundingClientRect();
-    onSeek(Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width)) * duration);
-  };
-  return (
-    <div className="w-full">
-      <div ref={barRef} className="h-1 bg-white/[0.08] rounded-full w-full relative group cursor-pointer" onClick={handleClick}>
-        <div className="h-full rounded-full absolute left-0 top-0 bg-gradient-to-r from-[#D8B86A] via-[#F2D98B] to-[#2ED3A2]"
-          style={{ width: `${percent}%`, transition: 'width 0.15s linear' }} />
-        <div className="w-3 h-3 rounded-full bg-[#F8E7AE] absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 shadow-[0_0_14px_rgba(216,184,106,0.6)]"
-          style={{ left: `calc(${percent}% - 6px)`, transition: 'opacity 0.1s' }} />
-      </div>
-      <div className="flex justify-between mt-1.5 text-[11px] text-white/40 font-medium tracking-wide">
-        <span>{formatTime(progress)}</span>
-        <span>{formatTime(duration)}</span>
-      </div>
-    </div>
-  );
-});
+// Progress bar: RAF-interpolated to avoid stutter/jank.
+
 
 function PlaylistDropdown({ playlists, currentTrackId, onAdd, onRemove, onClose }: {
   playlists: Array<{ id: string; name: string; tracks: Array<{ id: string }> }>;
@@ -167,21 +143,53 @@ function LyricsPanel({
           <p className="text-xs opacity-60">Enjoy the music</p>
         </div>
       ) : syncedLines.length > 0 ? (
-        syncedLines.map((line, idx) => {
-          const isActive = idx === currentLineIndex;
+        // Virtualize to keep DOM node count low (but keep visual centered feel)
+        (() => {
+          const active = currentLineIndex;
+          const start = Math.max(0, active - 7);
+          const end = Math.min(syncedLines.length, active + 8);
+          const visible = syncedLines.slice(start, end);
           return (
-            <button key={idx} id={`lyrics-line-${idx}`} onClick={() => onSeek(line.time)}
-              className="w-full text-left cursor-pointer origin-center transition-all duration-500"
-              style={{
-                opacity: isActive ? 1 : 0.15,
-                transform: isActive ? 'scale(1) translateY(0)' : 'scale(0.92) translateY(8px)',
-              }}>
-              <p className={`transition-all duration-500 ${isActive ? 'text-white text-xl md:text-2xl lg:text-3xl font-bold drop-shadow-[0_0_20px_rgba(216,184,106,0.08)]' : 'text-white/30 text-base md:text-lg font-medium'}`}>
-                {line.text}
-              </p>
-            </button>
+            <div className="w-full">
+              {/* top spacer */}
+              <div style={{ height: Math.max(0, start - 0) * 44 }} aria-hidden />
+              {visible.map((line, i) => {
+                const idx = start + i;
+                const isActive = idx === currentLineIndex;
+                return (
+                  <div
+                    key={idx}
+                    id={`lyrics-line-${idx}`}
+                    role="button"
+                    tabIndex={-1}
+                    onClick={() => onSeek(line.time)}
+                    className="w-full text-left cursor-pointer select-none"
+                    style={{
+                      height: 44,
+                      display: 'flex',
+                      alignItems: 'center',
+                      opacity: isActive ? 1 : 0.18,
+                      transform: isActive ? 'translateZ(0)' : 'translateZ(0)',
+                      willChange: isActive ? 'opacity' : undefined,
+                    }}
+                  >
+                    <p
+                      className={
+                        isActive
+                          ? 'text-white text-xl md:text-2xl lg:text-3xl font-bold drop-shadow-[0_0_20px_rgba(216,184,106,0.08)]'
+                          : 'text-white/30 text-base md:text-lg font-medium'
+                      }
+                    >
+                      {line.text}
+                    </p>
+                  </div>
+                );
+              })}
+              {/* bottom spacer */}
+              <div style={{ height: Math.max(0, syncedLines.length - end) * 44 }} aria-hidden />
+            </div>
           );
-        })
+        })()
       ) : (
         <pre className="whitespace-pre-wrap font-sans text-base md:text-lg text-white/40 leading-relaxed text-center max-w-lg">{plainLyrics}</pre>
       )}
@@ -206,7 +214,10 @@ export function FullscreenPlayer() {
   const [lyricsNotFound, setLyricsNotFound] = useState(false);
   const [currentLineIndex, setCurrentLineIndex] = useState(-1);
   const lyricsRef = useRef<HTMLDivElement>(null);
+  const activeIdxRef = useRef(-1);
+  const rafScrollRef = useRef<number | null>(null);
   const [lyricsExpanded, setLyricsExpanded] = useState(false);
+
 
   const isLiked = !!currentTrack && favorites.some(t => t.id === currentTrack.id);
   const title = currentTrack ? getTrackTitle(currentTrack) : '';
@@ -247,17 +258,34 @@ export function FullscreenPlayer() {
       const next = syncedLines[i + 1];
       return progress >= l.time && (!next || progress < next.time);
     });
-    if (idx !== -1 && idx !== currentLineIndex) {
+
+    if (idx === -1) return;
+    if (idx !== activeIdxRef.current) {
+      activeIdxRef.current = idx;
       setCurrentLineIndex(idx);
-      const el = document.getElementById(`lyrics-line-${idx}`);
-      if (el && lyricsRef.current) {
-        lyricsRef.current.scrollTo({
-          top: el.offsetTop - lyricsRef.current.clientHeight / 2 + el.clientHeight / 2,
-          behavior: 'smooth',
-        });
+
+      // Scroll only when active line changes; throttle by rAF.
+      if (lyricsRef.current) {
+        const el = document.getElementById(`lyrics-line-${idx}`);
+        if (el) {
+          if (rafScrollRef.current != null) cancelAnimationFrame(rafScrollRef.current);
+          rafScrollRef.current = requestAnimationFrame(() => {
+            if (!lyricsRef.current) return;
+            const container = lyricsRef.current;
+            const top = (el as HTMLElement).offsetTop - container.clientHeight / 2 + (el as HTMLElement).clientHeight / 2;
+            container.scrollTo({ top, behavior: 'auto' });
+          });
+        }
       }
     }
-  }, [progress, syncedLines, currentLineIndex]);
+  }, [progress, syncedLines]);
+
+  useEffect(() => {
+    return () => {
+      if (rafScrollRef.current != null) cancelAnimationFrame(rafScrollRef.current);
+    };
+  }, []);
+
 
   const togglePlay = useCallback(() => { if (currentTrack) setPlaying(!isPlaying); }, [currentTrack, isPlaying, setPlaying]);
   const toggleLike = useCallback(() => { if (!currentTrack) return; isLiked ? removeFavorite(currentTrack.id) : addFavorite(currentTrack); }, [currentTrack, isLiked, addFavorite, removeFavorite]);
@@ -296,7 +324,8 @@ export function FullscreenPlayer() {
             <p className="text-sm text-white/50 font-medium truncate mt-0.5">{currentTrack.artist}</p>
           </div>
         </div>
-        <ProgressBar progress={progress} duration={currentTrack.duration} onSeek={handleSeek} />
+        <ProgressBarRaf progress={progress} duration={currentTrack.duration} onSeek={handleSeek} />
+
         <div className="mt-4 mb-2">
           <Controls isPlaying={isPlaying} isLoading={isLoading} shuffle={shuffle} repeat={repeat} queue={queue}
             onTogglePlay={togglePlay} onPrev={handlePrev} onNext={handleNext}
@@ -318,7 +347,7 @@ export function FullscreenPlayer() {
             <p className="text-base text-white/50 font-medium truncate mt-1">{currentTrack.artist}</p>
           </div>
           <div className="w-full max-w-sm">
-            <ProgressBar progress={progress} duration={currentTrack.duration} onSeek={handleSeek} />
+            <ProgressBarRaf progress={progress} duration={currentTrack.duration} onSeek={handleSeek} />
           </div>
           <Controls isPlaying={isPlaying} isLoading={isLoading} shuffle={shuffle} repeat={repeat} queue={queue}
             onTogglePlay={togglePlay} onPrev={handlePrev} onNext={handleNext}

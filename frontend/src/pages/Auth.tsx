@@ -119,8 +119,8 @@ export function Auth() {
             {...fadeUp(0.3)}
             className="flex flex-col items-center mb-9"
           >
-            <div className="relative mb-5 h-20 w-44 rounded-2xl overflow-hidden border border-[#D8B86A]/20 bg-[#080A0C] shadow-[0_0_32px_rgba(216,184,106,0.16)]">
-              <Suspense fallback={<div className="h-full w-full bg-[#0B0E10]" />}>
+                <div className="relative mb-5 h-20 w-20 rounded-2xl overflow-hidden border border-[#D8B86A]/20 bg-[#080A0C] shadow-[0_0_32px_rgba(216,184,106,0.16)]">
+                <Suspense fallback={<div className="h-full w-full bg-[#0B0E10]" />}>
                 <ASCIIText text="Sumic!" enableWaves asciiFontSize={8} textFontSize={160} planeBaseHeight={7} />
               </Suspense>
             </div>

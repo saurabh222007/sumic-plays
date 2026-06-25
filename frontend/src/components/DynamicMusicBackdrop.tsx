@@ -90,29 +90,56 @@ function buildPalette(raw: RawPalette, intensity: 'subtle' | 'full'): Palette {
   };
 }
 
+const paletteCache = new Map<string, Palette>();
+
 export function DynamicMusicBackdrop({ track, intensity = 'subtle' }: DynamicMusicBackdropProps) {
   const [colors, setColors] = useState<Palette>(fallbackColors);
   const thumbKey = track?.thumbnail || 'fallback';
 
   useEffect(() => {
-    if (!track?.thumbnail) { setColors(fallbackColors()); return; }
+    const key = `${track?.id ?? 'no-track'}:${track?.thumbnail ?? 'no-thumb'}:${intensity}`;
+    const cached = paletteCache.get(key);
+    if (cached) {
+      setColors(cached);
+      return;
+    }
+
+    if (!track?.thumbnail) {
+      const fb = fallbackColors();
+      paletteCache.set(key, fb);
+      setColors(fb);
+      return;
+    }
+
     let cancelled = false;
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = track.thumbnail;
+
     img.onload = () => {
       if (cancelled) return;
-      setColors(buildPalette(extractRaw(img), intensity));
+      const raw = extractRaw(img);
+      const built = buildPalette(raw, intensity);
+      paletteCache.set(key, built);
+      setColors(built);
     };
-    img.onerror = () => { if (!cancelled) setColors(fallbackColors()); };
-    return () => { cancelled = true; };
-  }, [track?.thumbnail, intensity]);
 
-  const blurOpacity = track?.thumbnail ? (intensity === 'full' ? 0.25 : 0.10) : 0;
+    img.onerror = () => {
+      if (cancelled) return;
+      const fb = fallbackColors();
+      paletteCache.set(key, fb);
+      setColors(fb);
+    };
+
+    return () => {
+      cancelled = true;
+    };
+  }, [track?.id, track?.thumbnail, intensity]);
+
+  const blurOpacity = track?.thumbnail ? (intensity === 'full' ? 0.18 : 0.08) : 0;
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden isolate">
-      {/* Morphing gradient background — no key so it animates smoothly between tracks */}
       <motion.div
         className="absolute inset-0"
         animate={{
@@ -123,42 +150,41 @@ export function DynamicMusicBackdrop({ track, intensity = 'subtle' }: DynamicMus
             linear-gradient(180deg, rgba(13,16,17,0.92) 0%, ${colors.base} 60%, #030404 100%)
           `,
         }}
-        transition={{ duration: 1.8, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
+        style={{ willChange: 'background' }}
       />
 
-      {/* Blurred artwork — crossfades */}
       <AnimatePresence>
         <motion.div
           key={thumbKey}
-          initial={{ opacity: 0, scale: 1.2 }}
-          animate={{ opacity: blurOpacity, scale: 1.08 }}
-          exit={{ opacity: 0, scale: 1.15 }}
-          transition={{ duration: 1.2, ease: 'easeOut' }}
-          className="absolute inset-[-12%] bg-center bg-cover blur-[100px]"
+          initial={{ opacity: 0, scale: 1.12 }}
+          animate={{ opacity: blurOpacity, scale: 1.06 }}
+          exit={{ opacity: 0, scale: 1.1 }}
+          transition={{ duration: 0.9, ease: 'easeOut' }}
+          className="absolute inset-[-12%] bg-center bg-cover blur-[70px] will-change-transform"
           style={{ backgroundImage: track?.thumbnail ? `url(${track.thumbnail})` : undefined }}
         />
       </AnimatePresence>
 
-      {/* Drifting orbs that slowly float — add life */}
-      <motion.div
+      {/* Static orbs (remove infinite drifting animations) */}
+      <div
         aria-hidden
-        className="absolute -top-[20%] -left-[10%] h-[50vh] w-[50vh] rounded-full blur-[100px] opacity-40"
-        style={{ background: `radial-gradient(circle, ${colors.primary.replace(/[\d.]+\)$/, '0.25)')}, transparent 70%)` }}
-        animate={{ x: [0, 30, -15, 0], y: [0, 20, -10, 0] }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute -top-[18%] -left-[10%] h-[50vh] w-[50vh] rounded-full blur-[70px] opacity-30"
+        style={{ background: `radial-gradient(circle, ${colors.primary.replace(/[\d.]+\)$/, '0.22)')}, transparent 70%)` }}
       />
-      <motion.div
+      <div
         aria-hidden
-        className="absolute -bottom-[15%] -right-[10%] h-[45vh] w-[45vh] rounded-full blur-[100px] opacity-30"
-        style={{ background: `radial-gradient(circle, ${colors.secondary.replace(/[\d.]+\)$/, '0.2)')}, transparent 70%)` }}
-        animate={{ x: [0, -25, 15, 0], y: [0, -15, 10, 0] }}
-        transition={{ duration: 25, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute -bottom-[15%] -right-[10%] h-[45vh] w-[45vh] rounded-full blur-[70px] opacity-25"
+        style={{ background: `radial-gradient(circle, ${colors.secondary.replace(/[\d.]+\)$/, '0.18)')}, transparent 70%)` }}
       />
 
-      {/* Subtle noise texture */}
-      <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")` }}
+      <div
+        className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        }}
       />
     </div>
   );
 }
+

@@ -98,7 +98,8 @@ export function Home() {
             </h1>
             <p className="text-sm md:text-base text-text-secondary mt-1">Discover music that matches your mood</p>
           </div>
-          <div className="h-16 w-40 md:h-20 md:w-52 rounded-2xl overflow-hidden border border-[#D8B86A]/20 bg-[#080A0C]/80 shadow-[0_0_28px_rgba(216,184,106,0.12)]">
+
+          <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl overflow-hidden border border-[#D8B86A]/20 bg-[#080A0C]/80 shadow-[0_0_28px_rgba(216,184,106,0.12)]">
             <Suspense fallback={<div className="h-full w-full bg-[#0B0E10]" />}>
               <ASCIIText text="Sumic!" enableWaves asciiFontSize={7} textFontSize={150} planeBaseHeight={7} />
             </Suspense>
