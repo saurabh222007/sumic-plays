@@ -4,8 +4,6 @@ import {
   Volume2, Heart, Loader2, Shuffle, Repeat, ListMusic, Plus,
   Disc3,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import type { PanInfo } from 'framer-motion';
 import { usePlayerStore } from '../../store/usePlayerStore';
 import { useLibraryStore } from '../../store/useLibraryStore';
 import { getLyrics, normalizeTitle, normalizeArtist } from '../../lib/lyrics';
