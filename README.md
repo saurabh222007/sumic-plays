@@ -139,5 +139,4 @@ sumic/
 ---
 
 ## 👤 Author
-
-Developed and maintained by **someone** ([@saurabh222007](https://github.com/saurabh222007)).
+ **someone** 
