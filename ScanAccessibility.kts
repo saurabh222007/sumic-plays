@@ -1,7 +1,7 @@
 import java.io.File
 
 fun main() {
-    val dir = File("c:/Users/Pooja Vishwakarma/Documents/velune/app/src/main/kotlin/com/nikhil/yt/ui")
+    val dir = File("c:/Users/Pooja Vishwakarma/Documents/sumic/app/src/main/kotlin/com/nikhil/yt/ui")
     if (!dir.exists()) {
         println("Directory not found")
         return

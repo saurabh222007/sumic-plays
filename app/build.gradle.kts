@@ -16,11 +16,11 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.nikhil.yt"
+    namespace = "com.someone.yt"
     compileSdk = 36
 
     defaultConfig {
-    applicationId = "com.nikhil.yt"
+    applicationId = "com.someone.yt"
         minSdk = 26
         targetSdk = 36
         versionCode = 10
@@ -108,8 +108,8 @@ android {
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = false
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildFeatures {
@@ -245,7 +245,7 @@ dependencies {
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_21)
+        jvmTarget.set(JvmTarget.JVM_17)
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
         freeCompilerArgs.addAll(
             "-opt-in=kotlin.RequiresOptIn",

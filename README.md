@@ -1,20 +1,20 @@
 
 <div align="center">
 
- <img src="https://raw.githubusercontent.com/nikhilvishwakarma00/Velune/main/fastlane/metadata/android/en-US/images/icon.png" width="110" />
+ <img src="https://raw.githubusercontent.com/saurabh222007/Sumic/main/fastlane/metadata/android/en-US/images/icon.png" width="110" />
 
 </div>
 
-# 🌌 Velune
+# 🌌 Sumic
 <div align="center">
 
 <pre>
-██╗   ██╗███████╗██╗     ██╗   ██╗███╗   ██╗███████╗
-██║   ██║██╔════╝██║     ██║   ██║████╗  ██║██╔════╝
-██║   ██║█████╗  ██║     ██║   ██║██╔██╗ ██║█████╗
-╚██╗ ██╔╝██╔══╝  ██║     ██║   ██║██║╚██╗██║██╔══╝
- ╚████╔╝ ███████╗███████╗╚██████╔╝██║ ╚████║███████╗
-  ╚═══╝  ╚══════╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝
+███████╗██╗   ██╗███╗   ███╗███████╗ ██████╗ 
+██╔════╝██║   ██║████╗ ████║╚══██╔══╝██╔════╝ 
+███████╗██║   ██║██╔████╔██║   ██║   ██║      
+╚════██║██║   ██║██║╚██╔╝██║   ██║   ██║      
+███████║╚██████╔╝██║ ╚═╝ ██║███████╗╚██████╗ 
+╚══════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝ ╚═════╝ 
 </pre>
 
 </div>
@@ -25,10 +25,10 @@
 
 <div align="center">
 
-![Release](https://img.shields.io/github/v/release/nikhilvishwakarma00/Velune?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=3B82F6)
-![Downloads](https://img.shields.io/github/downloads/nikhilvishwakarma00/Velune/total?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=10B981)
-![Stars](https://img.shields.io/github/stars/nikhilvishwakarma00/Velune?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=F59E0B)
-![License](https://img.shields.io/github/license/nikhilvishwakarma00/Velune?style=for-the-badge&labelColor=18181B&color=EF4444)
+![Release](https://img.shields.io/github/v/release/saurabh222007/Sumic?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=3B82F6)
+![Downloads](https://img.shields.io/github/downloads/saurabh222007/Sumic/total?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=10B981)
+![Stars](https://img.shields.io/github/stars/saurabh222007/Sumic?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=F59E0B)
+![License](https://img.shields.io/github/license/saurabh222007/Sumic?style=for-the-badge&labelColor=18181B&color=EF4444)
 
 <br>
 
@@ -56,13 +56,13 @@
   <tbody>
     <tr>
       <td align="center">
-        <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/nikhilvishwakarma00/Velune">
-          <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="50" alt="Get Velune on Obtainium">
+        <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/saurabh222007/Sumic">
+          <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="50" alt="Get Sumic on Obtainium">
         </a>
       </td>
       <td align="center">
-        <a href="https://apt.izzysoft.de/fdroid/index/apk/com.nikhil.yt">
-          <img src="assets/IzzyOnDroidButtonBorder.svg" height="50" alt="Get Velune on IzzyOnDroid">
+        <a href="https://apt.izzysoft.de/fdroid/index/apk/com.someone.yt">
+          <img src="assets/IzzyOnDroidButtonBorder.svg" height="50" alt="Get Sumic on IzzyOnDroid">
         </a>
       </td>
     </tr>
@@ -71,8 +71,8 @@
     </tr>
     <tr>
       <td align="center" colspan="2">
-        <a href="https://github.com/nikhilvishwakarma00/Velune/releases/latest">
-          <img src="assets/badge_github.png" height="50" alt="Get Velune on GitHub">
+        <a href="https://github.com/saurabh222007/Sumic/releases/latest">
+          <img src="assets/badge_github.png" height="50" alt="Get Sumic on GitHub">
         </a>
       </td>
     </tr>
@@ -82,9 +82,9 @@
 </div>
 
 
-## 🚀 Why Velune?
+## 🚀 Why Sumic?
 
-Velune is not just another music player — it's a **complete reimagination of YouTube Music**.
+Sumic is not just another music player — it's a **complete reimagination of YouTube Music**.
 
 * ⚡ **Faster** than the official app
 * 🎵 Built for audiophiles & power users
@@ -183,7 +183,7 @@ Built using **modern Android engineering principles**:
 ## 📂 Project Structure
 
 ```bash
-velune/
+sumic/
 ├── app/
 ├── innertube/
 ├── lrclib/
@@ -201,8 +201,8 @@ Android SDK 34+ \
 Run Locally\
 Bash
 ```
-git clone https://github.com/nikhilvishwakarma00/Velune.git\
-cd Velune\
+git clone https://github.com/saurabh222007/Sumic.git\
+cd Sumic\
 
 ```
 Open in Android Studio → Sync → Run ▶ \
@@ -216,10 +216,10 @@ Open in Android Studio → Sync → Run ▶ \
 ## 💬 Community
 
 Have a feature request, found a bug,
-or just want to share your favorite music setups? Join the official Velune community!
+or just want to share your favorite music setups? Join the official Sumic community!
 
-* *Discord:* [Join the Velune Server](https://discord.gg/cJNHTdpP6H)
-* *GitHub Discussions:* [Open a Discussion](https://github.com/nikhilvishwakarma00/Velune/discussions)
+* *Discord:* [Join the Sumic Server](https://discord.gg/cJNHTdoP6H)
+* *GitHub Discussions:* [Open a Discussion](https://github.com/saurabh222007/Sumic/discussions)
 
 
 
@@ -242,23 +242,23 @@ SimpMusic
 BetterLyrics
 
 ⚖️ Legal
-Velune is an independent client and is not affiliated with YouTube or Google.\
+Sumic is an independent client and is not affiliated with YouTube or Google.\
 Please support artists through official platforms ❤️\
 Licensed under GPL-3.0
  
 
-💙 Built with passion by Nikhil\
-⭐ Star the repo if Velune impressed you\
+💙 Built with passion by saurabh222007\
+⭐ Star the repo if Sumic impressed you\
 🚀 Help it reach more people
 
 ## 🔗 Star History
 
 <div align="center">
-  <a href="https://star-history.com/nikhilvishwakarma00/velune&Date">
+  <a href="https://star-history.com/saurabh222007/Sumic&Date">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=nikhilvishwakarma00/velune&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=nikhilvishwakarma00/velune&type=Date" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=nikhilvishwakarma00/velune&type=Date" />
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=saurabh222007/Sumic&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=saurabh222007/Sumic&type=Date" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=saurabh222007/Sumic&type=Date" />
     </picture>
   </a>
 
