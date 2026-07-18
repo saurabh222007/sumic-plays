@@ -1,182 +1,98 @@
-
 <div align="center">
+  <img src="fastlane/metadata/android/en-US/images/icon.png" width="120" alt="Sumic Logo" />
+  
+  <h3>🎧 The YouTube Music client you always wanted</h3>
+  <p>🚫 No Ads • 💰 No Subscription • ⚡ Full Control</p>
 
- <img src="https://raw.githubusercontent.com/saurabh222007/Sumic/main/fastlane/metadata/android/en-US/images/icon.png" width="110" />
-
+  [![GitHub Release](https://img.shields.io/github/v/release/saurabh222007/Sumic?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=3B82F6)](https://github.com/saurabh222007/Sumic/releases)
+  [![Stars](https://img.shields.io/github/stars/saurabh222007/Sumic?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=F59E0B)](https://github.com/saurabh222007/Sumic/stargazers)
+  [![License](https://img.shields.io/github/license/saurabh222007/Sumic?style=for-the-badge&labelColor=18181B&color=EF4444)](LICENSE)
 </div>
-
-# 🌌 Sumic
-<div align="center">
-
-<pre>
-███████╗██╗   ██╗███╗   ███╗███████╗ ██████╗ 
-██╔════╝██║   ██║████╗ ████║╚══██╔══╝██╔════╝ 
-███████╗██║   ██║██╔████╔██║   ██║   ██║      
-╚════██║██║   ██║██║╚██╔╝██║   ██║   ██║      
-███████║╚██████╔╝██║ ╚═╝ ██║███████╗╚██████╗ 
-╚══════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝ ╚═════╝ 
-</pre>
-
-</div>
-
-### 🎧 The YouTube Music app you always wanted
-
-🚫 No Ads • 💰 No Subscription • ⚡ Full Control  
-
-<div align="center">
-
-![Release](https://img.shields.io/github/v/release/saurabh222007/Sumic?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=3B82F6)
-![Downloads](https://img.shields.io/github/downloads/saurabh222007/Sumic/total?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=10B981)
-![Stars](https://img.shields.io/github/stars/saurabh222007/Sumic?style=for-the-badge&logo=github&logoColor=white&labelColor=18181B&color=F59E0B)
-![License](https://img.shields.io/github/license/saurabh222007/Sumic?style=for-the-badge&labelColor=18181B&color=EF4444)
-
-<br>
-
-![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
-![Jetpack Compose](https://img.shields.io/badge/Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
-![Architecture](https://img.shields.io/badge/Architecture-MVVM-52525B?style=for-the-badge)
-
-</div>
-
-## 📥 Download Now
-
-
-<div align="center">
-
-<h2>Stable Release</h2>
-
-<table>
-  <thead>
-    <tr>
-      <th align="center">Obtainium</th>
-      <th align="center">IzzyOnDroid</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center">
-        <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/saurabh222007/Sumic">
-          <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" height="50" alt="Get Sumic on Obtainium">
-        </a>
-      </td>
-      <td align="center">
-        <a href="https://apt.izzysoft.de/fdroid/index/apk/com.someone.yt">
-          <img src="assets/IzzyOnDroidButtonBorder.svg" height="50" alt="Get Sumic on IzzyOnDroid">
-        </a>
-      </td>
-    </tr>
-    <tr>
-      <th align="center" colspan="2">GitHub</th>
-    </tr>
-    <tr>
-      <td align="center" colspan="2">
-        <a href="https://github.com/saurabh222007/Sumic/releases/latest">
-          <img src="assets/badge_github.png" height="50" alt="Get Sumic on GitHub">
-        </a>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-</div>
-
-
-## 🚀 Why Sumic?
-
-Sumic is not just another music player — it's a **complete reimagination of YouTube Music**.
-
-* ⚡ **Faster** than the official app
-* 🎵 Built for audiophiles & power users
-* 📦 True offline-first experience
-* 🎨 Stunning **Material You** interface
-
-> 💡 This is YouTube Music — *but unlocked*
 
 ---
 
-## 🎯 Highlight Feature
+## 🚀 Overview
 
-### 🎤 Real-Time Synced Lyrics
-
-Experience lyrics like never before:
-
-- Word-by-word sync  
-- Smooth animations  
-- Translation support  
-- Fully immersive playback  
+Sumic is a fast, offline-first YouTube Music client built for Android. It is fully open-source, features a stunning Material You interface, and supports high-fidelity audio playback, custom theme creation, playlist tagging, and playlist imports from Spotify, YouTube Music, M3U, and CSV formats.
 
 ---
 
 ## 📸 Preview
 
 <div align="center">
-
-<img src="screenshots/Home.png" width="140"/>
-<img src="screenshots/Now Playing.png" width="140"/>
-<img src="screenshots/History.png" width="140"/>
-<img src="screenshots/Stats.png" width="140"/>
-
-<br/>
-
-<img src="screenshots/Library.png" width="140"/>
-<img src="screenshots/Settings.png" width="140"/>
-<img src="screenshots/About.png" width="140"/>
-
+  <img src="screenshots/Home.png" width="140" alt="Home Screen"/>
+  <img src="screenshots/Now Playing.png" width="140" alt="Now Playing"/>
+  <img src="screenshots/History.png" width="140" alt="History"/>
+  <img src="screenshots/Stats.png" width="140" alt="Stats"/>
+  <br/>
+  <img src="screenshots/Library.png" width="140" alt="Library"/>
+  <img src="screenshots/Settings.png" width="140" alt="Settings"/>
+  <img src="screenshots/About.png" width="140" alt="About"/>
 </div>
-
-
 
 ---
 
 ## ✨ Features
 
 ### 🎵 Core Experience
-- Ad-Free Playback  
-- Full Library Sync  
-- Offline Caching (Encrypted)  
-- Background Playback  
+- **Ad-Free Playback** – Enjoy uninterrupted music.
+- **Full Library Sync** – Keep your playlists and library updated.
+- **Encrypted Offline Caching** – Save music securely for offline listening.
+- **Background Playback** – Listen while using other apps or with your screen off.
+
+### 📥 Import & Playlist Management
+- **Spotify Playlist Importer** – Paste any public Spotify playlist share link to automatically search, match, and import songs into a new local playlist in the background.
+- **M3U & CSV Playlist Support** – Import playlists directly from standard `.m3u` and `.csv` files.
+- **YouTube Music Import** – Synchronize and import remote YouTube Music playlists to editable local playlists.
+- **Playlist Tags & Organization** – Group, filter, and organize your music library by tagging playlists with custom names and colors.
 
 ### 🔊 Audio Engine
-- Gapless Playback  
-- Crossfade Engine  
-- Silence Skipping  
-- Loudness Normalization (EBU R128)  
-- Tempo & Pitch Control  
-- System EQ Integration  
+- **Gapless Playback** – Seamless transitions between tracks.
+- **Crossfade Engine** – Smooth fade-in/fade-out between songs.
+- **Silence Skipping** – Auto-skip silent segments.
+- **Loudness Normalization** – Consistent volume using EBU R128 standards.
+- **Tempo & Pitch Control** – Adjust audio speed and key.
+- **System EQ Integration** – Work with system equalizers.
 
-### 🎨 UI & Discovery
-- Material You (Dynamic Colors)  
-- Synced Lyrics + Translation  
-- Discord Rich Presence  
-- Personalized Home Feed  
-- Year in Review Stats  
-- Custom Animated Loader  
+### 🎨 Themes & Customization
+- **Material You** – Dynamic color themes matching your wallpaper.
+- **Theme Creator** – Design your own dynamic color palette using seed colors (Primary, Secondary, Tertiary, Neutral) and export/import your themes.
+- **Curated Presets** – Select from premium color palettes (like Spotify Green).
+- **Multiple Player Layouts** – Select from Classic, Modern, Minimal, Cinematic, and Metro interfaces.
+- **Interactive Visuals** – Enable the modern squiggly progress bar and swipe gestures to skip songs.
+
+### 🎤 Lyrics & Sharing
+- **Synced Lyrics V2** – Immersive, word-by-word real-time synced lyrics with translation support, Japanese/Korean romanization, and custom text sizes.
+- **Lyrics Sharing** – Share lyrics as text or generate premium image cards for social sharing.
+
+### 🔌 Integrations
+- **Discord Rich Presence** – Show off what you're listening to on Discord in real-time.
+- **Last.fm Scrobbling** – Sync your listening history automatically to Last.fm.
+- **Update Checker** – Receive notifications when a new version of the app is available.
 
 ---
 
 ## 🧠 Architecture
 
-Built using **modern Android engineering principles**:
-
-- MVVM + Clean Architecture  
-- Unidirectional Data Flow (UDF)  
-- Modular & scalable codebase  
+Built using modern Android engineering principles:
+- **MVVM + Clean Architecture** for clear separation of concerns.
+- **Unidirectional Data Flow (UDF)** for predictable state management.
+- **Modular Design** to keep the codebase maintainable and scalable.
 
 ---
 
 ## 🛠 Tech Stack
 
 | Layer | Stack |
-|------|------|
-| Language | Kotlin |
-| UI | Jetpack Compose + Material 3 |
-| Audio | Media3 / ExoPlayer |
-| DI | Hilt |
-| Database | Room (Encrypted) |
-| Networking | Ktor + Retrofit |
-| Async | Coroutines + Flow |
-| Build | Gradle KTS |
+|:---|:---|
+| **Language** | Kotlin |
+| **UI** | Jetpack Compose + Material 3 |
+| **Audio** | Media3 / ExoPlayer |
+| **Dependency Injection** | Hilt |
+| **Database** | Room (Encrypted) |
+| **Networking** | Ktor + Retrofit |
+| **Concurrency** | Coroutines + Flow |
+| **Build Tool** | Gradle KTS |
 
 ---
 
@@ -184,85 +100,44 @@ Built using **modern Android engineering principles**:
 
 ```bash
 sumic/
-├── app/
-├── innertube/
-├── lrclib/
-├── kizzy/
-├── canvas/
-├── lastfm/
-├── kugou/
+├── app/          # Main application module (UI, state, player service)
+├── innertube/    # YouTube Music API client
+├── lrclib/       # Real-time synced lyrics integration
+├── kizzy/        # Discord Rich Presence module
+├── canvas/       # Ambient visualization canvas
+├── lastfm/       # Last.fm integration for scrobbling
+└── kugou/        # Kugou Music client (fallback lyrics)
 ```
 
-Getting Started \
-Requirements\
-Android Studio Ladybug+\
-JDK 17
-Android SDK 34+ \
-Run Locally\
-Bash
-```
-git clone https://github.com/saurabh222007/Sumic.git\
-cd Sumic\
+---
 
-```
-Open in Android Studio → Sync → Run ▶ \
-📦 Download
- 
+## 🛠 Getting Started
 
-🚀 Get Latest Release⁠ 
+### Requirements
+- **IDE**: Android Studio Ladybug+
+- **JDK**: JDK 17
+- **SDK**: Android SDK 34+
 
--------------------------------------------------------------------------
+### Run Locally
 
-## 💬 Community
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/saurabh222007/Sumic.git
+   cd Sumic
+   ```
+2. Open the project in Android Studio.
+3. Sync Gradle and build the project.
+4. Click **Run** ▶ to deploy to your device.
 
-Have a feature request, found a bug,
-or just want to share your favorite music setups? Join the official Sumic community!
+---
 
-* *Discord:* [Join the Sumic Server](https://discord.gg/cJNHTdoP6H)
-* *GitHub Discussions:* [Open a Discussion](https://github.com/saurabh222007/Sumic/discussions)
+## ⚖️ License & Legal
 
+- Sumic is an independent client and is not affiliated with YouTube or Google.
+- Licensed under the **GPL-3.0 License**.
 
+---
 
---------------------------------------------------------------------------------------------------------------
+## 👤 Author
 
-
-🙌 Credits\
-Huge respect to these projects:
-
-Archivetune -base framework
-
-Metrolist
-
-InnerTune
-
-Kizzy
-
-SimpMusic
-
-BetterLyrics
-
-⚖️ Legal
-Sumic is an independent client and is not affiliated with YouTube or Google.\
-Please support artists through official platforms ❤️\
-Licensed under GPL-3.0
- 
-
-💙 Built with passion by saurabh222007\
-⭐ Star the repo if Sumic impressed you\
-🚀 Help it reach more people
-
-## 🔗 Star History
-
-<div align="center">
-  <a href="https://star-history.com/saurabh222007/Sumic&Date">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=saurabh222007/Sumic&type=Date&theme=dark" />
-      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=saurabh222007/Sumic&type=Date" />
-      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=saurabh222007/Sumic&type=Date" />
-    </picture>
-  </a>
-
-  <br/>
-  <br/><br/>
-</div>
- 
+Developed and maintained by **someone** ([@saurabh222007](https://github.com/saurabh222007)).
